@@ -1,0 +1,4044 @@
+{
+  "count": 62,
+  "forms": [
+    {
+      "form": "accounts.forms.AcessoForm",
+      "app": "accounts",
+      "kind": "form",
+      "model": null,
+      "fields": [
+        {
+          "name": "username",
+          "type": "UsernameField",
+          "widget": "TextInput",
+          "required": true,
+          "label": null,
+          "help_text": false
+        },
+        {
+          "name": "password",
+          "type": "CharField",
+          "widget": "PasswordInput",
+          "required": true,
+          "label": "Senha",
+          "help_text": false
+        },
+        {
+          "name": "manter_conectado",
+          "type": "BooleanField",
+          "widget": "CheckboxInput",
+          "required": false,
+          "label": "Mantenha-me conectado",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "accounts.forms.UsuarioForm",
+      "app": "accounts",
+      "kind": "modelform",
+      "model": "accounts.User",
+      "fields": [
+        {
+          "name": "first_name",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Primeiro nome",
+          "help_text": false
+        },
+        {
+          "name": "last_name",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Último nome",
+          "help_text": false
+        },
+        {
+          "name": "username",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Usuário",
+          "help_text": true
+        },
+        {
+          "name": "email",
+          "type": "EmailField",
+          "widget": "EmailInput",
+          "required": false,
+          "label": "Endereço de email",
+          "help_text": false
+        },
+        {
+          "name": "setores",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Setores e módulos de acesso",
+          "help_text": false
+        },
+        {
+          "name": "servidor",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Servidor correspondente",
+          "help_text": false
+        },
+        {
+          "name": "perfil",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Perfil de acesso",
+          "help_text": false
+        },
+        {
+          "name": "senha",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Senha",
+          "help_text": false
+        },
+        {
+          "name": "confirmacao_senha",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Confirmação da senha",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "atendimento_imprensa.forms.AtendimentoForm",
+      "app": "atendimento_imprensa",
+      "kind": "modelform",
+      "model": "atendimento_imprensa.Atendimento",
+      "fields": [
+        {
+          "name": "data",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": true,
+          "label": "Data do pedido",
+          "help_text": false
+        },
+        {
+          "name": "horario",
+          "type": "CampoHora",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Horário do pedido",
+          "help_text": false
+        },
+        {
+          "name": "jornalista",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Jornalista",
+          "help_text": false
+        },
+        {
+          "name": "veiculo",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Veículo",
+          "help_text": false
+        },
+        {
+          "name": "contato",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Contato",
+          "help_text": false
+        },
+        {
+          "name": "pedido",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Pedido",
+          "help_text": false
+        },
+        {
+          "name": "responsavel",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Responsável pelo atendimento",
+          "help_text": false
+        },
+        {
+          "name": "deadline",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Deadline / veiculação",
+          "help_text": false
+        },
+        {
+          "name": "horario_resposta",
+          "type": "CampoHora",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Horário da resposta",
+          "help_text": false
+        },
+        {
+          "name": "responsavel_resposta",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Responsável pela resposta",
+          "help_text": false
+        },
+        {
+          "name": "fonte",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Fontes consultadas",
+          "help_text": true
+        },
+        {
+          "name": "inicio_pedido",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Início do pedido às fontes",
+          "help_text": true
+        },
+        {
+          "name": "final_pedido",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Retorno das fontes",
+          "help_text": true
+        },
+        {
+          "name": "resposta",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Resposta enviada",
+          "help_text": false
+        },
+        {
+          "name": "veiculo_novo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Outro veículo (não listado)",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "atendimento_imprensa.forms.FiltroAtendimentosForm",
+      "app": "atendimento_imprensa",
+      "kind": "form",
+      "model": null,
+      "fields": [
+        {
+          "name": "q",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Busca",
+          "help_text": false
+        },
+        {
+          "name": "situacao",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Situação",
+          "help_text": false
+        },
+        {
+          "name": "veiculo",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Veículo",
+          "help_text": false
+        },
+        {
+          "name": "responsavel",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Responsável",
+          "help_text": false
+        },
+        {
+          "name": "inicio",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Pedidos a partir de",
+          "help_text": false
+        },
+        {
+          "name": "fim",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Pedidos até",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "atendimento_imprensa.forms.ResponsavelForm",
+      "app": "atendimento_imprensa",
+      "kind": "modelform",
+      "model": "atendimento_imprensa.Responsavel",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Nome",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "atendimento_imprensa.forms.VeiculoForm",
+      "app": "atendimento_imprensa",
+      "kind": "modelform",
+      "model": "atendimento_imprensa.Veiculo",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Nome",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.ConfiguracaoCoffeeBreakForm",
+      "app": "coffee_break",
+      "kind": "modelform",
+      "model": "coffee_break.ConfiguracaoCoffeeBreak",
+      "fields": [
+        {
+          "name": "oficio_vocativo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Vocativo do ofício",
+          "help_text": false
+        },
+        {
+          "name": "oficio_assinante",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Quem assina o ofício",
+          "help_text": false
+        },
+        {
+          "name": "oficio_cargo_assinante",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Cargo de quem assina",
+          "help_text": false
+        },
+        {
+          "name": "oficio_destinatario",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Destinatário do ofício",
+          "help_text": true
+        },
+        {
+          "name": "eprotocolo_assunto",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Assunto no eProtocolo",
+          "help_text": false
+        },
+        {
+          "name": "eprotocolo_palavras_chave",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Palavras-chave no eProtocolo",
+          "help_text": false
+        },
+        {
+          "name": "despacho_destino",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Despacho: a quem vai",
+          "help_text": false
+        },
+        {
+          "name": "email_copia",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "E-mail da ASCOM em cópia",
+          "help_text": true
+        },
+        {
+          "name": "email_os_assunto",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Assunto do e-mail da OS",
+          "help_text": true
+        },
+        {
+          "name": "email_os_texto",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Texto do e-mail da OS",
+          "help_text": true
+        },
+        {
+          "name": "email_ob_assunto",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Assunto do e-mail da ordem bancária",
+          "help_text": true
+        },
+        {
+          "name": "email_ob_texto",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Texto do e-mail da ordem bancária",
+          "help_text": false
+        },
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.ContratoCoffeeBreakForm",
+      "app": "coffee_break",
+      "kind": "modelform",
+      "model": "coffee_break.ContratoCoffeeBreak",
+      "fields": [
+        {
+          "name": "fornecedor",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Fornecedor",
+          "help_text": false
+        },
+        {
+          "name": "numero",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Número do contrato",
+          "help_text": false
+        },
+        {
+          "name": "numero_gms",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Número GMS",
+          "help_text": false
+        },
+        {
+          "name": "termo_aditivo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Termo aditivo",
+          "help_text": false
+        },
+        {
+          "name": "fiscal_responsavel",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Fiscal responsável",
+          "help_text": true
+        },
+        {
+          "name": "cargo_fiscal",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Cargo do fiscal",
+          "help_text": false
+        },
+        {
+          "name": "clausula_pagamento",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Cláusula do pagamento",
+          "help_text": true
+        },
+        {
+          "name": "arquivo_contrato",
+          "type": "FileField",
+          "widget": "ClearableFileInput",
+          "required": false,
+          "label": "Contrato (PDF)",
+          "help_text": true
+        },
+        {
+          "name": "arquivo_termo_aditivo",
+          "type": "FileField",
+          "widget": "ClearableFileInput",
+          "required": false,
+          "label": "Termo aditivo (PDF)",
+          "help_text": true
+        },
+        {
+          "name": "vigencia_fim",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Vigência — fim",
+          "help_text": true
+        },
+        {
+          "name": "quantidade_contratada",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Quantidade contratada",
+          "help_text": false
+        },
+        {
+          "name": "valor_unitario",
+          "type": "DecimalField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Valor unitário",
+          "help_text": false
+        },
+        {
+          "name": "antecedencia_minima_dias",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Antecedência mínima do pedido (dias)",
+          "help_text": true
+        },
+        {
+          "name": "objeto",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Objeto",
+          "help_text": false
+        },
+        {
+          "name": "observacoes",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Observações",
+          "help_text": false
+        },
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.FiltroLotesForm",
+      "app": "coffee_break",
+      "kind": "form",
+      "model": null,
+      "fields": [
+        {
+          "name": "q",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Busca",
+          "help_text": false
+        },
+        {
+          "name": "exercicio",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Exercício",
+          "help_text": false
+        },
+        {
+          "name": "situacao",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Situação",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.FiltroSolicitacoesCoffeeForm",
+      "app": "coffee_break",
+      "kind": "form",
+      "model": null,
+      "fields": [
+        {
+          "name": "q",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Busca",
+          "help_text": false
+        },
+        {
+          "name": "lote",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Lote",
+          "help_text": false
+        },
+        {
+          "name": "fornecedor",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Fornecedor",
+          "help_text": false
+        },
+        {
+          "name": "situacao",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Situação financeira",
+          "help_text": false
+        },
+        {
+          "name": "inicio",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Eventos a partir de",
+          "help_text": false
+        },
+        {
+          "name": "fim",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Eventos até",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.FormularioCadastroVersionado",
+      "app": "coffee_break",
+      "kind": "modelform",
+      "model": null,
+      "fields": [
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.FornecedorForm",
+      "app": "coffee_break",
+      "kind": "modelform",
+      "model": "coffee_break.Fornecedor",
+      "fields": [
+        {
+          "name": "razao_social",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Razão social",
+          "help_text": false
+        },
+        {
+          "name": "nome_curto",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Nome curto",
+          "help_text": true
+        },
+        {
+          "name": "cnpj",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "CNPJ",
+          "help_text": true
+        },
+        {
+          "name": "contato",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Contato",
+          "help_text": false
+        },
+        {
+          "name": "telefone",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Telefone",
+          "help_text": false
+        },
+        {
+          "name": "email",
+          "type": "EmailField",
+          "widget": "EmailInput",
+          "required": false,
+          "label": "E-mail",
+          "help_text": false
+        },
+        {
+          "name": "url_certidao_municipal",
+          "type": "URLField",
+          "widget": "URLInput",
+          "required": false,
+          "label": "Portal da certidão municipal",
+          "help_text": true
+        },
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.LoteCoffeeBreakForm",
+      "app": "coffee_break",
+      "kind": "modelform",
+      "model": "coffee_break.LoteCoffeeBreak",
+      "fields": [
+        {
+          "name": "contrato",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Contrato",
+          "help_text": false
+        },
+        {
+          "name": "numero",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Número do lote",
+          "help_text": false
+        },
+        {
+          "name": "exercicio",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Exercício",
+          "help_text": true
+        },
+        {
+          "name": "quantidade_total",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Quantidade total contratada",
+          "help_text": false
+        },
+        {
+          "name": "empenho",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Empenho",
+          "help_text": false
+        },
+        {
+          "name": "valor_empenho",
+          "type": "DecimalField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Valor do empenho",
+          "help_text": true
+        },
+        {
+          "name": "municipios",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Municípios abrangidos",
+          "help_text": false
+        },
+        {
+          "name": "municipios_texto",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Municípios (texto original)",
+          "help_text": true
+        },
+        {
+          "name": "orientacoes",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Orientações",
+          "help_text": false
+        },
+        {
+          "name": "especificacoes_tecnicas",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Especificações técnicas",
+          "help_text": false
+        },
+        {
+          "name": "observacoes",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Observações",
+          "help_text": false
+        },
+        {
+          "name": "ativo",
+          "type": "BooleanField",
+          "widget": "CheckboxInput",
+          "required": false,
+          "label": "Lote vigente",
+          "help_text": true
+        },
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.NotaCoffeeBreakForm",
+      "app": "coffee_break",
+      "kind": "modelform",
+      "model": "coffee_break.SolicitacaoCoffeeBreak",
+      "fields": [
+        {
+          "name": "numero_nota_fiscal",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Número da nota fiscal",
+          "help_text": false
+        },
+        {
+          "name": "quantidade_faturada",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Quantidade faturada",
+          "help_text": true
+        },
+        {
+          "name": "data_oficio",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data do ofício",
+          "help_text": false
+        },
+        {
+          "name": "numero_oficio",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Número do ofício",
+          "help_text": true
+        },
+        {
+          "name": "protocolo_pcpr_oficio",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "PCPR protocolo n.º",
+          "help_text": true
+        },
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.OcorrenciaEntregaForm",
+      "app": "coffee_break",
+      "kind": "modelform",
+      "model": "coffee_break.OcorrenciaEntrega",
+      "fields": [
+        {
+          "name": "tipo",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "O que aconteceu",
+          "help_text": false
+        },
+        {
+          "name": "avaliacao",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Avaliação (1 a 5)",
+          "help_text": false
+        },
+        {
+          "name": "recebido_por",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Quem recebeu",
+          "help_text": false
+        },
+        {
+          "name": "descricao",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Observação",
+          "help_text": false
+        },
+        {
+          "name": "foto",
+          "type": "FileField",
+          "widget": "ClearableFileInput",
+          "required": false,
+          "label": "Foto ou documento",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.PedidoCoffeeBreakForm",
+      "app": "coffee_break",
+      "kind": "modelform",
+      "model": "coffee_break.SolicitacaoCoffeeBreak",
+      "fields": [
+        {
+          "name": "municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Município do evento",
+          "help_text": true
+        },
+        {
+          "name": "data_solicitacao",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": true,
+          "label": "Data da solicitação",
+          "help_text": false
+        },
+        {
+          "name": "numero",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Número da solicitação",
+          "help_text": true
+        },
+        {
+          "name": "descricao_evento",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Descrição do evento",
+          "help_text": false
+        },
+        {
+          "name": "quantidade",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Quantidade solicitada",
+          "help_text": false
+        },
+        {
+          "name": "data_inicio_evento",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de início do evento",
+          "help_text": false
+        },
+        {
+          "name": "periodo_evento_texto",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Período do evento (texto original)",
+          "help_text": true
+        },
+        {
+          "name": "horario_evento",
+          "type": "TimeField",
+          "widget": "TimeInput",
+          "required": false,
+          "label": "Horário",
+          "help_text": false
+        },
+        {
+          "name": "local_entrega",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Local de entrega",
+          "help_text": false
+        },
+        {
+          "name": "endereco",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Endereço",
+          "help_text": true
+        },
+        {
+          "name": "bairro",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Bairro",
+          "help_text": false
+        },
+        {
+          "name": "cep",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "CEP",
+          "help_text": true
+        },
+        {
+          "name": "responsavel_recebimento",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Responsável pelo recebimento",
+          "help_text": true
+        },
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        },
+        {
+          "name": "registro_retroativo",
+          "type": "BooleanField",
+          "widget": "CheckboxInput",
+          "required": false,
+          "label": "Registro retroativo",
+          "help_text": false
+        },
+        {
+          "name": "justificativa_retroativo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Justificativa do registro retroativo",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.ProtocoloCoffeeBreakForm",
+      "app": "coffee_break",
+      "kind": "modelform",
+      "model": "coffee_break.SolicitacaoCoffeeBreak",
+      "fields": [
+        {
+          "name": "data_atesto_gaf",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de atesto e envio ao GAF",
+          "help_text": false
+        },
+        {
+          "name": "data_ordem_bancaria",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Ordem bancária emitida em",
+          "help_text": false
+        },
+        {
+          "name": "data_envio_empresa",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Ordem bancária enviada à empresa em",
+          "help_text": false
+        },
+        {
+          "name": "observacoes",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Observações",
+          "help_text": false
+        },
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "coffee_break.forms.SolicitacaoCoffeeBreakForm",
+      "app": "coffee_break",
+      "kind": "modelform",
+      "model": "coffee_break.SolicitacaoCoffeeBreak",
+      "fields": [
+        {
+          "name": "municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Município do evento",
+          "help_text": true
+        },
+        {
+          "name": "data_solicitacao",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": true,
+          "label": "Data da solicitação",
+          "help_text": false
+        },
+        {
+          "name": "numero",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Número da solicitação",
+          "help_text": true
+        },
+        {
+          "name": "descricao_evento",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Descrição do evento",
+          "help_text": false
+        },
+        {
+          "name": "quantidade",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Quantidade solicitada",
+          "help_text": false
+        },
+        {
+          "name": "data_inicio_evento",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de início do evento",
+          "help_text": false
+        },
+        {
+          "name": "data_fim_evento",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de fim do evento",
+          "help_text": false
+        },
+        {
+          "name": "periodo_evento_texto",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Período do evento (texto original)",
+          "help_text": true
+        },
+        {
+          "name": "horario_evento",
+          "type": "TimeField",
+          "widget": "TimeInput",
+          "required": false,
+          "label": "Horário",
+          "help_text": false
+        },
+        {
+          "name": "detalhamento_pedido",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Detalhamento do pedido",
+          "help_text": true
+        },
+        {
+          "name": "local_entrega",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Local de entrega",
+          "help_text": false
+        },
+        {
+          "name": "endereco",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Endereço",
+          "help_text": true
+        },
+        {
+          "name": "bairro",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Bairro",
+          "help_text": false
+        },
+        {
+          "name": "cep",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "CEP",
+          "help_text": true
+        },
+        {
+          "name": "responsavel_recebimento",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Responsável pelo recebimento",
+          "help_text": true
+        },
+        {
+          "name": "data_envio_ordem_servico",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "OS enviada ao fornecedor em",
+          "help_text": false
+        },
+        {
+          "name": "numero_nota_fiscal",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Número da nota fiscal",
+          "help_text": false
+        },
+        {
+          "name": "quantidade_faturada",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Quantidade faturada",
+          "help_text": true
+        },
+        {
+          "name": "arquivo_nota_fiscal",
+          "type": "FileField",
+          "widget": "ClearableFileInput",
+          "required": false,
+          "label": "Nota fiscal (PDF)",
+          "help_text": false
+        },
+        {
+          "name": "protocolo_pagamento",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Protocolo de pagamento",
+          "help_text": false
+        },
+        {
+          "name": "data_atesto_gaf",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de atesto e envio ao GAF",
+          "help_text": false
+        },
+        {
+          "name": "data_ordem_bancaria",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Ordem bancária emitida em",
+          "help_text": false
+        },
+        {
+          "name": "data_envio_empresa",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Ordem bancária enviada à empresa em",
+          "help_text": false
+        },
+        {
+          "name": "observacoes",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Observações",
+          "help_text": false
+        },
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "demandas_eventos.forms.DemandaEventoForm",
+      "app": "demandas_eventos",
+      "kind": "modelform",
+      "model": "demandas_eventos.DemandaEvento",
+      "fields": [
+        {
+          "name": "municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Município",
+          "help_text": false
+        },
+        {
+          "name": "data_inicio_evento",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data do evento",
+          "help_text": false
+        },
+        {
+          "name": "data_fim_evento",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Fim do evento",
+          "help_text": false
+        },
+        {
+          "name": "hora_inicio",
+          "type": "TimeField",
+          "widget": "TimeInput",
+          "required": false,
+          "label": "Horário",
+          "help_text": false
+        },
+        {
+          "name": "evento",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Evento",
+          "help_text": false
+        },
+        {
+          "name": "local",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Local do evento",
+          "help_text": false
+        },
+        {
+          "name": "endereco",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Endereço",
+          "help_text": true
+        },
+        {
+          "name": "bairro",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Bairro",
+          "help_text": false
+        },
+        {
+          "name": "cep",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "CEP",
+          "help_text": true
+        },
+        {
+          "name": "informacoes_previas",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Informações prévias",
+          "help_text": false
+        },
+        {
+          "name": "solicitante",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Solicitante",
+          "help_text": false
+        },
+        {
+          "name": "telefone",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Telefone",
+          "help_text": false
+        },
+        {
+          "name": "email",
+          "type": "EmailField",
+          "widget": "EmailInput",
+          "required": false,
+          "label": "E-mail",
+          "help_text": false
+        },
+        {
+          "name": "data_solicitacao",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": true,
+          "label": "Data da solicitação",
+          "help_text": false
+        },
+        {
+          "name": "canal_solicitacao",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Foi solicitado via",
+          "help_text": false
+        },
+        {
+          "name": "protocolo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Nº do protocolo",
+          "help_text": false
+        },
+        {
+          "name": "descricao",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Descrição",
+          "help_text": false
+        },
+        {
+          "name": "quantidade_publico",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Quantidade de público",
+          "help_text": false
+        },
+        {
+          "name": "assunto_email",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Assunto e-mail",
+          "help_text": false
+        },
+        {
+          "name": "pedido_contato",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Pedido/contato",
+          "help_text": false
+        },
+        {
+          "name": "temas",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Tema",
+          "help_text": false
+        },
+        {
+          "name": "palestrantes",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Servidor",
+          "help_text": false
+        },
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        },
+        {
+          "name": "estado",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Estado",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "demandas_eventos.forms.PalestranteForm",
+      "app": "demandas_eventos",
+      "kind": "modelform",
+      "model": "demandas_eventos.Palestrante",
+      "fields": [
+        {
+          "name": "municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Município",
+          "help_text": false
+        },
+        {
+          "name": "divisao",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Divisão",
+          "help_text": false
+        },
+        {
+          "name": "lotacao",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Lotação",
+          "help_text": false
+        },
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Servidor",
+          "help_text": false
+        },
+        {
+          "name": "servidor",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Servidor no cadastro de Viagens",
+          "help_text": false
+        },
+        {
+          "name": "contato",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Contato",
+          "help_text": false
+        },
+        {
+          "name": "email",
+          "type": "EmailField",
+          "widget": "EmailInput",
+          "required": false,
+          "label": "E-mail",
+          "help_text": false
+        },
+        {
+          "name": "tema_abordagem",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Tema de abordagem",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "demandas_eventos.forms.RespostaPadraoForm",
+      "app": "demandas_eventos",
+      "kind": "modelform",
+      "model": "demandas_eventos.RespostaPadrao",
+      "fields": [
+        {
+          "name": "tipo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Tipo",
+          "help_text": false
+        },
+        {
+          "name": "mensagem",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Mensagem",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "demandas_eventos.forms.TemaForm",
+      "app": "demandas_eventos",
+      "kind": "modelform",
+      "model": "demandas_eventos.Tema",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Nome",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "publicacoes.forms.FiltroPublicacoesForm",
+      "app": "publicacoes",
+      "kind": "form",
+      "model": null,
+      "fields": [
+        {
+          "name": "q",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Busca",
+          "help_text": false
+        },
+        {
+          "name": "status",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Status",
+          "help_text": false
+        },
+        {
+          "name": "jornalista",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Jornalista",
+          "help_text": false
+        },
+        {
+          "name": "unidade",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Unidade",
+          "help_text": false
+        },
+        {
+          "name": "inicio",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Pautas a partir de",
+          "help_text": false
+        },
+        {
+          "name": "fim",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Pautas até",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "publicacoes.forms.PublicacaoForm",
+      "app": "publicacoes",
+      "kind": "modelform",
+      "model": "publicacoes.Publicacao",
+      "fields": [
+        {
+          "name": "data",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": true,
+          "label": "Data da pauta",
+          "help_text": false
+        },
+        {
+          "name": "jornalista",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Jornalista responsável",
+          "help_text": false
+        },
+        {
+          "name": "unidade",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Unidade responsável",
+          "help_text": false
+        },
+        {
+          "name": "fonte",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Fonte da pauta",
+          "help_text": true
+        },
+        {
+          "name": "inicio_pauta",
+          "type": "CampoHora",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Início da pauta",
+          "help_text": false
+        },
+        {
+          "name": "titulo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Título da pauta",
+          "help_text": false
+        },
+        {
+          "name": "colocada_edicao",
+          "type": "CampoHora",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Colocada para edição",
+          "help_text": false
+        },
+        {
+          "name": "data_publicacao",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de publicação",
+          "help_text": false
+        },
+        {
+          "name": "horario_publicacao",
+          "type": "CampoHora",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Horário de publicação",
+          "help_text": false
+        },
+        {
+          "name": "revisao",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Revisão",
+          "help_text": false
+        },
+        {
+          "name": "galeria_fotos",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Galeria de fotos",
+          "help_text": false
+        },
+        {
+          "name": "bitly_grupos",
+          "type": "CampoSimNao",
+          "widget": "Select",
+          "required": false,
+          "label": "Bitly nos grupos",
+          "help_text": false
+        },
+        {
+          "name": "enviado_sesp",
+          "type": "CampoSimNao",
+          "widget": "Select",
+          "required": false,
+          "label": "Enviado para a SESP",
+          "help_text": false
+        },
+        {
+          "name": "publicado_aen",
+          "type": "CampoSimNao",
+          "widget": "Select",
+          "required": false,
+          "label": "Publicado na AEN",
+          "help_text": false
+        },
+        {
+          "name": "link_site",
+          "type": "URLField",
+          "widget": "URLInput",
+          "required": false,
+          "label": "Link no site da PCPR",
+          "help_text": false
+        },
+        {
+          "name": "link_aen",
+          "type": "URLField",
+          "widget": "URLInput",
+          "required": false,
+          "label": "Link na AEN",
+          "help_text": false
+        },
+        {
+          "name": "unidade_nova",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Outra unidade (não listada)",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "publicacoes.forms.ResponsavelForm",
+      "app": "publicacoes",
+      "kind": "modelform",
+      "model": "publicacoes.Responsavel",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Nome",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "publicacoes.forms.UnidadeForm",
+      "app": "publicacoes",
+      "kind": "modelform",
+      "model": "publicacoes.Unidade",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Nome",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "solicitacoes.forms.AnexoForm",
+      "app": "solicitacoes",
+      "kind": "form",
+      "model": null,
+      "fields": [
+        {
+          "name": "arquivo",
+          "type": "FileField",
+          "widget": "ClearableFileInput",
+          "required": true,
+          "label": "Arquivo",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "solicitacoes.forms.DespachoForm",
+      "app": "solicitacoes",
+      "kind": "form",
+      "model": null,
+      "fields": [
+        {
+          "name": "decisao",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Decisão",
+          "help_text": false
+        },
+        {
+          "name": "observacao",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Observações DG",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "solicitacoes.forms.FiltroSolicitacoesForm",
+      "app": "solicitacoes",
+      "kind": "form",
+      "model": null,
+      "fields": [
+        {
+          "name": "q",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Busca",
+          "help_text": false
+        },
+        {
+          "name": "status",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Status",
+          "help_text": false
+        },
+        {
+          "name": "municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Município",
+          "help_text": false
+        },
+        {
+          "name": "tipo_evento",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Tipo do evento",
+          "help_text": false
+        },
+        {
+          "name": "inicio",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Eventos a partir de",
+          "help_text": false
+        },
+        {
+          "name": "fim",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Eventos até",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "solicitacoes.forms.SolicitacaoForm",
+      "app": "solicitacoes",
+      "kind": "modelform",
+      "model": "solicitacoes.SolicitacaoEvento",
+      "fields": [
+        {
+          "name": "data_solicitacao",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": true,
+          "label": "Data da solicitação",
+          "help_text": false
+        },
+        {
+          "name": "data_inicio_evento",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de início do evento",
+          "help_text": false
+        },
+        {
+          "name": "data_fim_evento",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de fim do evento",
+          "help_text": false
+        },
+        {
+          "name": "tipo_evento",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Tipo de evento",
+          "help_text": false
+        },
+        {
+          "name": "municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Município",
+          "help_text": false
+        },
+        {
+          "name": "local_evento",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Local do evento",
+          "help_text": false
+        },
+        {
+          "name": "endereco",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Endereço",
+          "help_text": true
+        },
+        {
+          "name": "bairro",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Bairro",
+          "help_text": false
+        },
+        {
+          "name": "cep",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "CEP",
+          "help_text": true
+        },
+        {
+          "name": "protocolo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Protocolo (eProtocolo)",
+          "help_text": false
+        },
+        {
+          "name": "solicitante_nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Nome do solicitante",
+          "help_text": false
+        },
+        {
+          "name": "solicitante_cargo_unidade",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Cargo / unidade do solicitante",
+          "help_text": false
+        },
+        {
+          "name": "contato",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Contato",
+          "help_text": false
+        },
+        {
+          "name": "orgao_responsavel",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Órgão responsável",
+          "help_text": false
+        },
+        {
+          "name": "unidade_movel",
+          "type": "_SimNao",
+          "widget": "Select",
+          "required": false,
+          "label": "Unidade móvel",
+          "help_text": false
+        },
+        {
+          "name": "unidade_movel_designada",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Unidade móvel designada",
+          "help_text": true
+        },
+        {
+          "name": "descricao_complementar",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Descrição complementar",
+          "help_text": false
+        },
+        {
+          "name": "tipo_operacao",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Tipo de operação",
+          "help_text": false
+        },
+        {
+          "name": "quantidade_cin",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Quantidade de CIN",
+          "help_text": false
+        },
+        {
+          "name": "motorista",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Motorista",
+          "help_text": false
+        },
+        {
+          "name": "estado",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Estado",
+          "help_text": false
+        },
+        {
+          "name": "servicos",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Serviços solicitados",
+          "help_text": false
+        },
+        {
+          "name": "equipes",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Equipes",
+          "help_text": false
+        },
+        {
+          "name": "versao",
+          "type": "CharField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_cadastros.forms.AssinaturaSubstituicaoForm",
+      "app": "viagens_cadastros",
+      "kind": "modelform",
+      "model": "viagens_cadastros.AssinaturaSubstituicao",
+      "fields": [
+        {
+          "name": "tipo",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Documentos",
+          "help_text": false
+        },
+        {
+          "name": "servidor",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Substituto",
+          "help_text": false
+        },
+        {
+          "name": "inicio",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": true,
+          "label": "Início",
+          "help_text": false
+        },
+        {
+          "name": "fim",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Fim",
+          "help_text": true
+        },
+        {
+          "name": "motivo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Motivo",
+          "help_text": true
+        },
+        {
+          "name": "ativo",
+          "type": "BooleanField",
+          "widget": "CheckboxInput",
+          "required": false,
+          "label": "Ativa",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_cadastros.forms.CargoForm",
+      "app": "viagens_cadastros",
+      "kind": "modelform",
+      "model": "viagens_cadastros.Cargo",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Cargo",
+          "help_text": false
+        },
+        {
+          "name": "is_padrao",
+          "type": "BooleanField",
+          "widget": "CheckboxInput",
+          "required": false,
+          "label": "Usar como cargo padrão",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "viagens_cadastros.forms.CombustivelForm",
+      "app": "viagens_cadastros",
+      "kind": "modelform",
+      "model": "viagens_cadastros.Combustivel",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Combustível",
+          "help_text": false
+        },
+        {
+          "name": "is_padrao",
+          "type": "BooleanField",
+          "widget": "CheckboxInput",
+          "required": false,
+          "label": "Usar como combustível padrão",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "viagens_cadastros.forms.ServidorForm",
+      "app": "viagens_cadastros",
+      "kind": "modelform",
+      "model": "viagens_cadastros.Servidor",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Nome",
+          "help_text": false
+        },
+        {
+          "name": "cargo",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Cargo",
+          "help_text": false
+        },
+        {
+          "name": "cpf",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "CPF",
+          "help_text": false
+        },
+        {
+          "name": "rg",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "RG",
+          "help_text": false
+        },
+        {
+          "name": "telefone",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Telefone",
+          "help_text": false
+        },
+        {
+          "name": "unidade",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Unidade",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_cadastros.forms.TabelaDiariaForm",
+      "app": "viagens_cadastros",
+      "kind": "modelform",
+      "model": "viagens_cadastros.TabelaDiaria",
+      "fields": [
+        {
+          "name": "faixa",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Faixa",
+          "help_text": false
+        },
+        {
+          "name": "valor_24h",
+          "type": "DecimalField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Diária de 24 horas",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_cadastros.forms.UnidadeForm",
+      "app": "viagens_cadastros",
+      "kind": "modelform",
+      "model": "viagens_cadastros.Unidade",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Nome",
+          "help_text": false
+        },
+        {
+          "name": "sigla",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Sigla",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_cadastros.forms.ViaturaForm",
+      "app": "viagens_cadastros",
+      "kind": "modelform",
+      "model": "viagens_cadastros.Viatura",
+      "fields": [
+        {
+          "name": "placa",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Placa",
+          "help_text": false
+        },
+        {
+          "name": "modelo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Modelo",
+          "help_text": false
+        },
+        {
+          "name": "tipo",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Tipo",
+          "help_text": false
+        },
+        {
+          "name": "combustivel",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Combustível",
+          "help_text": false
+        },
+        {
+          "name": "unidade",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Unidade",
+          "help_text": false
+        },
+        {
+          "name": "motoristas",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Motoristas",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_oficios.forms.JustificativaCadastroForm",
+      "app": "viagens_oficios",
+      "kind": "form",
+      "model": null,
+      "fields": [
+        {
+          "name": "oficio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Ofício",
+          "help_text": false
+        },
+        {
+          "name": "modelo",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Modelo de justificativa",
+          "help_text": false
+        },
+        {
+          "name": "texto",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Justificativa",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_oficios.forms.JustificativaForm",
+      "app": "viagens_oficios",
+      "kind": "modelform",
+      "model": "viagens_oficios.Justificativa",
+      "fields": [
+        {
+          "name": "modelo",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Modelo",
+          "help_text": false
+        },
+        {
+          "name": "texto",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Texto",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_oficios.forms.ModeloJustificativaForm",
+      "app": "viagens_oficios",
+      "kind": "modelform",
+      "model": "viagens_oficios.ModeloJustificativa",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Nome do modelo",
+          "help_text": false
+        },
+        {
+          "name": "texto",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Texto",
+          "help_text": true
+        },
+        {
+          "name": "is_padrao",
+          "type": "BooleanField",
+          "widget": "CheckboxInput",
+          "required": false,
+          "label": "Usar como padrão",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "viagens_oficios.forms.ModeloMotivoOficioForm",
+      "app": "viagens_oficios",
+      "kind": "modelform",
+      "model": "viagens_oficios.ModeloMotivoOficio",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Nome do modelo",
+          "help_text": false
+        },
+        {
+          "name": "texto",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Texto",
+          "help_text": true
+        },
+        {
+          "name": "is_padrao",
+          "type": "BooleanField",
+          "widget": "CheckboxInput",
+          "required": false,
+          "label": "Usar como padrão",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "viagens_oficios.forms.NumeracaoForm",
+      "app": "viagens_oficios",
+      "kind": "modelform",
+      "model": "viagens_oficios.ConfiguracaoNumeracaoOficio",
+      "fields": [
+        {
+          "name": "ano",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Ano",
+          "help_text": false
+        },
+        {
+          "name": "numero_inicial",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Número inicial",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_oficios.forms.OficioDocumentoForm",
+      "app": "viagens_oficios",
+      "kind": "modelform",
+      "model": "viagens_oficios.Oficio",
+      "fields": [
+        {
+          "name": "data_criacao",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": true,
+          "label": "Data do ofício",
+          "help_text": false
+        },
+        {
+          "name": "protocolo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Protocolo",
+          "help_text": false
+        },
+        {
+          "name": "assunto",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Assunto",
+          "help_text": false
+        },
+        {
+          "name": "modelo_motivo",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Modelo de motivo",
+          "help_text": false
+        },
+        {
+          "name": "motivo",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Motivo",
+          "help_text": false
+        },
+        {
+          "name": "solicitante",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Unidade solicitante",
+          "help_text": false
+        },
+        {
+          "name": "custeio",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Custeio",
+          "help_text": false
+        },
+        {
+          "name": "custeio_observacao",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Observação do custeio",
+          "help_text": false
+        },
+        {
+          "name": "servidores",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Viajantes",
+          "help_text": false
+        },
+        {
+          "name": "servidores_termo_autorizacao",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Servidores com Termo de Autorização",
+          "help_text": false
+        },
+        {
+          "name": "viatura",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Viatura",
+          "help_text": false
+        },
+        {
+          "name": "motorista_modo",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Identificação do motorista",
+          "help_text": false
+        },
+        {
+          "name": "motorista",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Motorista",
+          "help_text": false
+        },
+        {
+          "name": "motorista_manual_nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Nome do motorista externo",
+          "help_text": false
+        },
+        {
+          "name": "motorista_manual_rg",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "RG do motorista externo",
+          "help_text": false
+        },
+        {
+          "name": "motorista_manual_cpf",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "CPF do motorista externo",
+          "help_text": false
+        },
+        {
+          "name": "motorista_manual_cargo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Cargo do motorista externo",
+          "help_text": false
+        },
+        {
+          "name": "motorista_manual_unidade",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Unidade do motorista externo",
+          "help_text": false
+        },
+        {
+          "name": "motorista_manual_observacao",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Observação sobre o motorista",
+          "help_text": false
+        },
+        {
+          "name": "motorista_oficio_referencia",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Ofício do motorista",
+          "help_text": true
+        },
+        {
+          "name": "motorista_protocolo_ref",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Protocolo do motorista",
+          "help_text": false
+        },
+        {
+          "name": "transporte_placa_manual",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Placa da viatura não cadastrada",
+          "help_text": false
+        },
+        {
+          "name": "transporte_modelo_manual",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Modelo da viatura não cadastrada",
+          "help_text": false
+        },
+        {
+          "name": "transporte_combustivel_manual",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Combustível da viatura não cadastrada",
+          "help_text": false
+        },
+        {
+          "name": "transporte_tipo_manual",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Tipo da viatura não cadastrada",
+          "help_text": false
+        },
+        {
+          "name": "porte_transporte_armas",
+          "type": "BooleanField",
+          "widget": "CheckboxInput",
+          "required": false,
+          "label": "Porte/transporte de armas",
+          "help_text": false
+        },
+        {
+          "name": "roteiro",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Roteiro",
+          "help_text": false
+        },
+        {
+          "name": "assinante",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Assinante deste ofício",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_oficios.forms.OficioForm",
+      "app": "viagens_oficios",
+      "kind": "modelform",
+      "model": "viagens_oficios.Oficio",
+      "fields": [
+        {
+          "name": "numero",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "N° do Ofício",
+          "help_text": false
+        },
+        {
+          "name": "data_criacao",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": true,
+          "label": "Data do ofício",
+          "help_text": false
+        },
+        {
+          "name": "protocolo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Protocolo",
+          "help_text": false
+        },
+        {
+          "name": "custeio",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Custeio",
+          "help_text": false
+        },
+        {
+          "name": "custeio_observacao",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Nome da Instituição",
+          "help_text": false
+        },
+        {
+          "name": "modelo_motivo",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Modelo de motivo",
+          "help_text": false
+        },
+        {
+          "name": "motivo",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Descrição",
+          "help_text": false
+        },
+        {
+          "name": "servidores",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Servidores",
+          "help_text": false
+        },
+        {
+          "name": "servidores_termo_autorizacao",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Servidores com Termo de Autorização",
+          "help_text": false
+        },
+        {
+          "name": "viatura",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Viatura",
+          "help_text": false
+        },
+        {
+          "name": "motorista_modo",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Motorista modo",
+          "help_text": false
+        },
+        {
+          "name": "motorista",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Buscar motorista no sistema",
+          "help_text": false
+        },
+        {
+          "name": "motorista_manual_nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Nome completo",
+          "help_text": false
+        },
+        {
+          "name": "motorista_oficio_referencia",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "N° do Ofício",
+          "help_text": true
+        },
+        {
+          "name": "motorista_protocolo_ref",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Protocolo",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_ordens.forms.OrdemServicoForm",
+      "app": "viagens_ordens",
+      "kind": "modelform",
+      "model": "viagens_ordens.OrdemServico",
+      "fields": [
+        {
+          "name": "numero",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Numero",
+          "help_text": false
+        },
+        {
+          "name": "oficios",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Ofícios vinculados",
+          "help_text": false
+        },
+        {
+          "name": "data_evento_inicio",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data inicial do evento",
+          "help_text": false
+        },
+        {
+          "name": "data_evento_fim",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data final do evento",
+          "help_text": false
+        },
+        {
+          "name": "servidores",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Servidores",
+          "help_text": false
+        },
+        {
+          "name": "tipo_necessidade",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Tipo de necessidade",
+          "help_text": false
+        },
+        {
+          "name": "motorista_equipe",
+          "type": "ModelChoiceField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": "Motorista",
+          "help_text": false
+        },
+        {
+          "name": "tecnico_equipe",
+          "type": "ModelChoiceField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": "Técnico",
+          "help_text": false
+        },
+        {
+          "name": "apoio_montagem",
+          "type": "ModelChoiceField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": "Apoio de montagem",
+          "help_text": false
+        },
+        {
+          "name": "apoio_escolta",
+          "type": "ModelChoiceField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": "Apoio de escolta",
+          "help_text": false
+        },
+        {
+          "name": "coordenador_cerimonial",
+          "type": "ModelChoiceField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": "Coordenação de cerimonial",
+          "help_text": false
+        },
+        {
+          "name": "apoio_cerimonial",
+          "type": "ModelChoiceField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": "Apoio de cerimonial",
+          "help_text": false
+        },
+        {
+          "name": "apoio_preparacao",
+          "type": "ModelChoiceField",
+          "widget": "HiddenInput",
+          "required": false,
+          "label": "Apoio de preparação",
+          "help_text": false
+        },
+        {
+          "name": "motivo",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Motivo",
+          "help_text": false
+        },
+        {
+          "name": "destino_estado",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Estado",
+          "help_text": false
+        },
+        {
+          "name": "destino_cidade",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Cidade",
+          "help_text": false
+        },
+        {
+          "name": "modelo_motivo",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Modelo de motivo",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_planos.forms.EfetivoPlanoForm",
+      "app": "viagens_planos",
+      "kind": "modelform",
+      "model": "viagens_planos.EfetivoPlano",
+      "fields": [
+        {
+          "name": "unidade",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Unidade",
+          "help_text": false
+        },
+        {
+          "name": "cargo",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Cargo",
+          "help_text": false
+        },
+        {
+          "name": "quantidade",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Quantidade",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_planos.forms.PlanoDiariasForm",
+      "app": "viagens_planos",
+      "kind": "modelform",
+      "model": "viagens_planos.PlanoTrabalho",
+      "fields": [
+        {
+          "name": "saida_sede_data",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de saída da sede",
+          "help_text": false
+        },
+        {
+          "name": "saida_sede_hora",
+          "type": "TimeField",
+          "widget": "TimeInput",
+          "required": false,
+          "label": "Hora de saída da sede",
+          "help_text": false
+        },
+        {
+          "name": "chegada_sede_data",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de chegada na sede",
+          "help_text": false
+        },
+        {
+          "name": "chegada_sede_hora",
+          "type": "TimeField",
+          "widget": "TimeInput",
+          "required": false,
+          "label": "Hora de chegada na sede",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_planos.forms.PlanoIdentificacaoForm",
+      "app": "viagens_planos",
+      "kind": "modelform",
+      "model": "viagens_planos.PlanoTrabalho",
+      "fields": [
+        {
+          "name": "numero",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Numero",
+          "help_text": false
+        },
+        {
+          "name": "programa",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": null,
+          "help_text": false
+        },
+        {
+          "name": "programa_outros",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Programa (outros)",
+          "help_text": false
+        },
+        {
+          "name": "destino_estado",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "UF do destino",
+          "help_text": false
+        },
+        {
+          "name": "destino_cidade",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Cidade do destino",
+          "help_text": false
+        },
+        {
+          "name": "data_evento_inicio",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data inicial do evento",
+          "help_text": false
+        },
+        {
+          "name": "data_evento_fim",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data final do evento",
+          "help_text": false
+        },
+        {
+          "name": "horario_atendimento",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": null,
+          "help_text": false
+        },
+        {
+          "name": "coordenador_adm_modo",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Coordenador adm modo",
+          "help_text": false
+        },
+        {
+          "name": "coordenador_adm",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Coordenador administrativo",
+          "help_text": false
+        },
+        {
+          "name": "coordenador_adm_nome_manual",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Coordenador adm nome manual",
+          "help_text": false
+        },
+        {
+          "name": "coordenador_adm_cargo_manual",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Coordenador adm cargo manual",
+          "help_text": false
+        },
+        {
+          "name": "coordenador_adm_genero",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Coordenador adm genero",
+          "help_text": false
+        },
+        {
+          "name": "coordenador_op_modo",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Coordenador op modo",
+          "help_text": false
+        },
+        {
+          "name": "coordenador_op",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Coordenador operacional",
+          "help_text": false
+        },
+        {
+          "name": "coordenador_op_nome_manual",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Coordenador op nome manual",
+          "help_text": false
+        },
+        {
+          "name": "coordenador_op_cargo_manual",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Coordenador op cargo manual",
+          "help_text": false
+        },
+        {
+          "name": "coordenador_op_genero",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Coordenador op genero",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_prestacoes.forms.DiarioBordoTrechoForm",
+      "app": "viagens_prestacoes",
+      "kind": "modelform",
+      "model": "viagens_prestacoes.DiarioBordoTrecho",
+      "fields": [
+        {
+          "name": "km_inicial",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        },
+        {
+          "name": "km_final",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        },
+        {
+          "name": "abastecimento",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Necessidade de abastecimento",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_prestacoes.forms.DiarioMotoristaForm",
+      "app": "viagens_prestacoes",
+      "kind": "modelform",
+      "model": "viagens_prestacoes.DiarioBordo",
+      "fields": [
+        {
+          "name": "motorista_modo",
+          "type": "TypedChoiceField",
+          "widget": "RadioSelect",
+          "required": true,
+          "label": "Motorista modo",
+          "help_text": false
+        },
+        {
+          "name": "motorista_servidor",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Motorista (servidor do ofício)",
+          "help_text": false
+        },
+        {
+          "name": "motorista_manual_nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Motorista manual nome",
+          "help_text": false
+        },
+        {
+          "name": "motorista_manual_cpf",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        },
+        {
+          "name": "motorista_oficio_referencia",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Ofício do motorista",
+          "help_text": true
+        },
+        {
+          "name": "motorista_protocolo_ref",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        },
+        {
+          "name": "viatura_modo",
+          "type": "TypedChoiceField",
+          "widget": "RadioSelect",
+          "required": true,
+          "label": "Viatura modo",
+          "help_text": false
+        },
+        {
+          "name": "viatura",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Viatura (cadastro)",
+          "help_text": false
+        },
+        {
+          "name": "viatura_manual_modelo",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Viatura manual modelo",
+          "help_text": false
+        },
+        {
+          "name": "viatura_manual_placa",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": null,
+          "help_text": false
+        },
+        {
+          "name": "viatura_manual_tipo",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Viatura manual tipo",
+          "help_text": false
+        },
+        {
+          "name": "viatura_manual_combustivel",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Viatura manual combustivel",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_prestacoes.forms.ModeloTextoRelatorioTecnicoForm",
+      "app": "viagens_prestacoes",
+      "kind": "modelform",
+      "model": "viagens_prestacoes.ModeloTextoRelatorioTecnico",
+      "fields": [
+        {
+          "name": "campo",
+          "type": "ChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Campo do relatório",
+          "help_text": false
+        },
+        {
+          "name": "nome",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": true,
+          "label": "Nome",
+          "help_text": true
+        },
+        {
+          "name": "texto",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": true,
+          "label": "Texto do modelo",
+          "help_text": true
+        },
+        {
+          "name": "is_padrao",
+          "type": "BooleanField",
+          "widget": "CheckboxInput",
+          "required": false,
+          "label": "Usar como padrão deste campo",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "viagens_prestacoes.forms.PrestacaoDespachoForm",
+      "app": "viagens_prestacoes",
+      "kind": "modelform",
+      "model": "viagens_prestacoes.PrestacaoContas",
+      "fields": [
+        {
+          "name": "despacho_arquivos",
+          "type": "PrestacaoMultipleFileField",
+          "widget": "PrestacaoMultipleFileInput",
+          "required": false,
+          "label": "Despacho assinado do ofício",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "viagens_prestacoes.forms.PrestacaoServidorDiariaForm",
+      "app": "viagens_prestacoes",
+      "kind": "form",
+      "model": null,
+      "fields": [
+        {
+          "name": "diaria_valor_override",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Diária recebida por este servidor",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "viagens_prestacoes.forms.PrestacaoServidorDocumentosForm",
+      "app": "viagens_prestacoes",
+      "kind": "modelform",
+      "model": "viagens_prestacoes.PrestacaoServidor",
+      "fields": [
+        {
+          "name": "numero_solicitacao",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Número da solicitação",
+          "help_text": false
+        },
+        {
+          "name": "comprovante_arquivos",
+          "type": "PrestacaoMultipleFileField",
+          "widget": "PrestacaoMultipleFileInput",
+          "required": false,
+          "label": "Comprovante de saque/transferência",
+          "help_text": true
+        },
+        {
+          "name": "rt_assinado_arquivos",
+          "type": "PrestacaoMultipleFileField",
+          "widget": "PrestacaoMultipleFileInput",
+          "required": false,
+          "label": "Relatório técnico assinado",
+          "help_text": true
+        },
+        {
+          "name": "diario_assinado_arquivos",
+          "type": "PrestacaoMultipleFileField",
+          "widget": "PrestacaoMultipleFileInput",
+          "required": false,
+          "label": "Diário de bordo assinado",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "viagens_prestacoes.forms.PrestacaoSolicitacaoForm",
+      "app": "viagens_prestacoes",
+      "kind": "modelform",
+      "model": "viagens_prestacoes.PrestacaoServidor",
+      "fields": [
+        {
+          "name": "numero_solicitacao",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Número da solicitação",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_prestacoes.forms.RelatorioTecnicoForm",
+      "app": "viagens_prestacoes",
+      "kind": "modelform",
+      "model": "viagens_prestacoes.RelatorioTecnico",
+      "fields": [
+        {
+          "name": "diaria",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Diária",
+          "help_text": true
+        },
+        {
+          "name": "translado",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Translado",
+          "help_text": true
+        },
+        {
+          "name": "combustivel",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Combustível",
+          "help_text": true
+        },
+        {
+          "name": "passagem",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Passagem",
+          "help_text": true
+        },
+        {
+          "name": "motivo",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Descrição do evento",
+          "help_text": false
+        },
+        {
+          "name": "atividade",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Objetivo da participação",
+          "help_text": false
+        },
+        {
+          "name": "conclusao",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Conclusão",
+          "help_text": false
+        },
+        {
+          "name": "medidas",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Medidas a serem adotadas pelo órgão",
+          "help_text": false
+        },
+        {
+          "name": "info_complementares",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Informações complementares",
+          "help_text": false
+        },
+        {
+          "name": "translado_outro",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Translado - outro",
+          "help_text": false
+        },
+        {
+          "name": "combustivel_outro",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Combustível - outro",
+          "help_text": false
+        },
+        {
+          "name": "passagem_outro",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Passagem - outro",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_roteiros.forms.FormSetTolerante",
+      "app": "viagens_roteiros",
+      "kind": "formset",
+      "model": null,
+      "fields": []
+    },
+    {
+      "form": "viagens_roteiros.forms.RoteiroDestinoForm",
+      "app": "viagens_roteiros",
+      "kind": "modelform",
+      "model": "viagens_roteiros.RoteiroDestino",
+      "fields": [
+        {
+          "name": "ordem",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Ordem",
+          "help_text": false
+        },
+        {
+          "name": "municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Município",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_roteiros.forms.RoteiroForm",
+      "app": "viagens_roteiros",
+      "kind": "modelform",
+      "model": "viagens_roteiros.Roteiro",
+      "fields": [
+        {
+          "name": "origem_municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "município sede",
+          "help_text": true
+        },
+        {
+          "name": "solicitacao",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Solicitação de evento",
+          "help_text": true
+        }
+      ]
+    },
+    {
+      "form": "viagens_roteiros.forms.RoteiroTrechoForm",
+      "app": "viagens_roteiros",
+      "kind": "modelform",
+      "model": "viagens_roteiros.RoteiroTrecho",
+      "fields": [
+        {
+          "name": "ordem",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Ordem",
+          "help_text": false
+        },
+        {
+          "name": "sentido",
+          "type": "TypedChoiceField",
+          "widget": "Select",
+          "required": true,
+          "label": "Sentido",
+          "help_text": false
+        },
+        {
+          "name": "origem_municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Origem",
+          "help_text": false
+        },
+        {
+          "name": "destino_municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Destino",
+          "help_text": false
+        },
+        {
+          "name": "distancia_km",
+          "type": "DecimalField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Distância (km)",
+          "help_text": false
+        },
+        {
+          "name": "duracao_min",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Duração (min)",
+          "help_text": false
+        },
+        {
+          "name": "tempo_viagem_min",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": false,
+          "label": "Tempo de viagem (min)",
+          "help_text": false
+        },
+        {
+          "name": "tempo_adicional_min",
+          "type": "IntegerField",
+          "widget": "NumberInput",
+          "required": true,
+          "label": "Tempo adicional (min)",
+          "help_text": false
+        },
+        {
+          "name": "rota_fonte",
+          "type": "CharField",
+          "widget": "TextInput",
+          "required": false,
+          "label": "Fonte da estimativa",
+          "help_text": false
+        },
+        {
+          "name": "saida_data",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de saída",
+          "help_text": false
+        },
+        {
+          "name": "saida_hora",
+          "type": "TimeField",
+          "widget": "TimeInput",
+          "required": false,
+          "label": "Hora de saída",
+          "help_text": false
+        },
+        {
+          "name": "chegada_data",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de chegada",
+          "help_text": false
+        },
+        {
+          "name": "chegada_hora",
+          "type": "TimeField",
+          "widget": "TimeInput",
+          "required": false,
+          "label": "Hora de chegada",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_termos.forms.TermoAutorizacaoForm",
+      "app": "viagens_termos",
+      "kind": "modelform",
+      "model": "viagens_termos.TermoAutorizacao",
+      "fields": [
+        {
+          "name": "oficio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Oficio vinculado",
+          "help_text": false
+        },
+        {
+          "name": "destino_estado",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "UF do destino",
+          "help_text": false
+        },
+        {
+          "name": "destino_cidade",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Município do destino",
+          "help_text": false
+        },
+        {
+          "name": "data_evento_inicio",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data inicial",
+          "help_text": false
+        },
+        {
+          "name": "data_evento_fim",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data final",
+          "help_text": false
+        },
+        {
+          "name": "servidores",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Servidores",
+          "help_text": false
+        },
+        {
+          "name": "viatura",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Viatura",
+          "help_text": false
+        }
+      ]
+    },
+    {
+      "form": "viagens_viagem.forms.ViagemForm",
+      "app": "viagens_viagem",
+      "kind": "modelform",
+      "model": "viagens_viagem.Viagem",
+      "fields": [
+        {
+          "name": "tipos",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Tipo da viagem",
+          "help_text": false
+        },
+        {
+          "name": "motivo",
+          "type": "CharField",
+          "widget": "Textarea",
+          "required": false,
+          "label": "Motivo",
+          "help_text": false
+        },
+        {
+          "name": "data_inicio",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de início",
+          "help_text": false
+        },
+        {
+          "name": "data_fim",
+          "type": "DateField",
+          "widget": "DateInput",
+          "required": false,
+          "label": "Data de fim",
+          "help_text": false
+        },
+        {
+          "name": "destino_estado",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "UF do destino",
+          "help_text": false
+        },
+        {
+          "name": "destino_municipio",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Município do destino",
+          "help_text": false
+        },
+        {
+          "name": "modelo_motivo",
+          "type": "ModelChoiceField",
+          "widget": "Select",
+          "required": false,
+          "label": "Modelo de motivo",
+          "help_text": false
+        },
+        {
+          "name": "oficios_vinculados",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Ofícios já existentes",
+          "help_text": false
+        },
+        {
+          "name": "ordens_servico_vinculadas",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Ordens de serviço já existentes",
+          "help_text": false
+        },
+        {
+          "name": "planos_trabalho_vinculados",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Planos de trabalho já existentes",
+          "help_text": false
+        },
+        {
+          "name": "termos_vinculados",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Termos de autorização já existentes",
+          "help_text": false
+        },
+        {
+          "name": "roteiros_vinculados",
+          "type": "ModelMultipleChoiceField",
+          "widget": "SelectMultiple",
+          "required": false,
+          "label": "Roteiros já existentes",
+          "help_text": false
+        }
+      ]
+    }
+  ]
+}

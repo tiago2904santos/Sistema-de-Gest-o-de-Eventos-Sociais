@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "audit-finding.schema.json",
+  "title": "Achado de auditoria",
+  "description": "Formato comum dos achados do motor de auditoria (camada estática: agent_lab/audit_static.py; camada de runtime: tests/tools/audit-page.mjs).",
+  "type": "object",
+  "required": ["id", "rule", "source", "category", "severity", "title", "target", "evidence", "recommendation"],
+  "properties": {
+    "id": { "type": "string", "description": "Estável entre execuções: hash de regra + alvo + título." },
+    "rule": { "type": "string" },
+    "source": { "enum": ["static", "runtime", "manual"] },
+    "category": { "enum": ["FUNCTIONAL", "UX", "VISUAL", "ACCESSIBILITY", "RESPONSIVE", "PERFORMANCE", "SECURITY", "ARCHITECTURE", "CONSISTENCY", "MAINTAINABILITY"] },
+    "severity": { "enum": ["P0", "P1", "P2", "P3", "P4"], "description": "P0 quebrado · P1 crítico · P2 importante · P3 melhoria relevante · P4 refinamento" },
+    "title": { "type": "string" },
+    "detail": { "type": "string" },
+    "target": {
+      "type": "object",
+      "required": ["type", "ref"],
+      "properties": {
+        "type": { "enum": ["page", "component", "flow", "module"] },
+        "ref": { "type": "string" },
+        "role": { "type": "string" }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": { "enum": ["file", "screenshot", "diff", "snippet", "url", "trace", "metric", "dom", "console", "test"] },
+          "path": { "type": "string" },
+          "value": {}
+        }
+      }
+    },
+    "recommendation": { "type": "string" }
+  }
+}

@@ -1,0 +1,22 @@
+{% load static estaticos %}<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}UI Lab{% endblock %} · Laboratório do agente</title>
+  <link rel="stylesheet" href="{% estatico 'css/ds-v32.css' %}">
+  <link rel="stylesheet" href="{% estatico 'css/ds-v32-bridge.css' %}">
+  <style>
+    /* Estilos do próprio lab — nunca vazam para o produto. */
+    .lab{max-width:1200px;margin:0 auto;padding:24px 16px;font-family:var(--f)}
+    .lab h1{font-size:22px;margin:0 0 4px}.lab h2{font-size:16px;margin:32px 0 8px;border-bottom:1px solid var(--n-200);padding-bottom:4px}
+    .lab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+    .lab-cel{border:1px dashed var(--n-250);border-radius:8px;padding:12px;background:var(--branco)}
+    .lab-cel__meta{font:12px/1.4 ui-monospace,monospace;color:var(--n-600);margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap}
+    .lab-cel__meta a{color:var(--link)}
+    .lab-erro{color:var(--dg-t);background:var(--dg-b);padding:8px;border-radius:6px;font:12px ui-monospace,monospace}
+    .lab-icons{display:flex;flex-wrap:wrap;gap:8px}.lab-icons .lab-cel{padding:8px;text-align:center;width:96px;font-size:11px}
+    .lab-solo{padding:24px}
+  </style>
+</head>
+<body>

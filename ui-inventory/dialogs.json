@@ -1,0 +1,229 @@
+{
+  "count": 28,
+  "dialogs": [
+    {
+      "template": "components/v32/dialogo_assinado.html",
+      "file": "templates/components/v32/dialogo_assinado.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "components/v32/dialogo_baixar.html",
+      "file": "templates/components/v32/dialogo_baixar.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/agenda/_assinar.html",
+      "file": "templates/pages/agenda/_assinar.html",
+      "element": "dialog",
+      "id": "ag-assinar",
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/agenda/_criar.html",
+      "file": "templates/pages/agenda/_criar.html",
+      "element": "dialog",
+      "id": "ag-criar",
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/agenda/painel.html",
+      "file": "templates/pages/agenda/painel.html",
+      "element": "dialog",
+      "id": "ag-modal",
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/ascom_cadastros/lista.html",
+      "file": "templates/pages/ascom_cadastros/lista.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/atendimento_imprensa/lista.html",
+      "file": "templates/pages/atendimento_imprensa/lista.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/atendimento_imprensa/painel.html",
+      "file": "templates/pages/atendimento_imprensa/painel.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/cadastros/lista.html",
+      "file": "templates/pages/cadastros/lista.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/coffee_break/_importar_processo.html",
+      "file": "templates/pages/coffee_break/_importar_processo.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/coffee_break/cadastro_lista.html",
+      "file": "templates/pages/coffee_break/cadastro_lista.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/coffee_break/lote_detalhe.html",
+      "file": "templates/pages/coffee_break/lote_detalhe.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/coffee_break/painel.html",
+      "file": "templates/pages/coffee_break/painel.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/coffee_break/solicitacoes_lista.html",
+      "file": "templates/pages/coffee_break/solicitacoes_lista.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/demandas_eventos/cadastro_lista.html",
+      "file": "templates/pages/demandas_eventos/cadastro_lista.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/demandas_eventos/dashboard.html",
+      "file": "templates/pages/demandas_eventos/dashboard.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/demandas_eventos/form.html",
+      "file": "templates/pages/demandas_eventos/form.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/demandas_eventos/lista.html",
+      "file": "templates/pages/demandas_eventos/lista.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/publicacoes/lista.html",
+      "file": "templates/pages/publicacoes/lista.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/publicacoes/painel.html",
+      "file": "templates/pages/publicacoes/painel.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/solicitacoes/form.html",
+      "file": "templates/pages/solicitacoes/form.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/viagens_cadastros/_dialogo_exclusao.html",
+      "file": "templates/pages/viagens_cadastros/_dialogo_exclusao.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/viagens_cadastros/lista.html",
+      "file": "templates/pages/viagens_cadastros/lista.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/viagens_oficios/justificativas.html",
+      "file": "templates/pages/viagens_oficios/justificativas.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/viagens_prestacoes/_importar_dialogo.html",
+      "file": "templates/pages/viagens_prestacoes/_importar_dialogo.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/viagens_prestacoes/diario_bordo_form.html",
+      "file": "templates/pages/viagens_prestacoes/diario_bordo_form.html",
+      "element": "dialog",
+      "id": "pc-dialogo-motorista",
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/viagens_prestacoes/importacao.html",
+      "file": "templates/pages/viagens_prestacoes/importacao.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_4.html",
+      "file": "templates/pages/viagens_viagem/_etapa_4.html",
+      "element": "dialog",
+      "id": null,
+      "aria_labelledby": true,
+      "aria_modal": false
+    }
+  ]
+}

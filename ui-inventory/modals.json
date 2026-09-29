@@ -1,0 +1,53 @@
+{
+  "count": 6,
+  "dialogs": [
+    {
+      "template": "components/date_multi.html",
+      "file": "templates/components/date_multi.html",
+      "element": "div",
+      "id": "{{ id }}_calendario",
+      "aria_labelledby": false,
+      "aria_modal": false
+    },
+    {
+      "template": "components/date_range.html",
+      "file": "templates/components/date_range.html",
+      "element": "div",
+      "id": "id_{{ name }}_calendar",
+      "aria_labelledby": false,
+      "aria_modal": false
+    },
+    {
+      "template": "components/input.html",
+      "file": "templates/components/input.html",
+      "element": "div",
+      "id": "id_{{ name }}_calendar",
+      "aria_labelledby": false,
+      "aria_modal": false
+    },
+    {
+      "template": "documentos/editor/embutido.html",
+      "file": "templates/documentos/editor/embutido.html",
+      "element": "div",
+      "id": null,
+      "aria_labelledby": false,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/viagens_planos/_deslocamento.html",
+      "file": "templates/pages/viagens_planos/_deslocamento.html",
+      "element": "div",
+      "id": "id_deslocamento_calendar",
+      "aria_labelledby": false,
+      "aria_modal": false
+    },
+    {
+      "template": "pages/viagens_roteiros/_editor.html",
+      "file": "templates/pages/viagens_roteiros/_editor.html",
+      "element": "div",
+      "id": null,
+      "aria_labelledby": false,
+      "aria_modal": false
+    }
+  ]
+}

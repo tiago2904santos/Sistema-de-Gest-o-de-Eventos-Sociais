@@ -1,0 +1,7 @@
+# Ferramentas de desenvolvimento e do laboratório do agente (não vão para produção).
+# Tracebacks legíveis na suíte paralela (manage.py test --parallel).
+tblib>=3.0
+# Lint + formatação Python (substitui flake8/isort/black num binário só).
+ruff>=0.8
+# Vulnerabilidades conhecidas nas dependências (PyPI advisory DB / OSV).
+pip-audit>=2.7

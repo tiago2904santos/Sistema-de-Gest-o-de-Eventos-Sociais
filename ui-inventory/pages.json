@@ -1,0 +1,6335 @@
+{
+  "count": 201,
+  "pages": [
+    {
+      "template": "403.html",
+      "file": "templates/403.html",
+      "lines": 18,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "f4947005cc635e88a719ce83db58fe3e917b100d",
+      "routes": []
+    },
+    {
+      "template": "404.html",
+      "file": "templates/404.html",
+      "lines": 18,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "ecdd9d83314529336cda1bf747508284ddb5ec03",
+      "routes": []
+    },
+    {
+      "template": "500.html",
+      "file": "templates/500.html",
+      "lines": 39,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "892d238712d00ba0c1f2208e9df29983b28f71ad",
+      "routes": []
+    },
+    {
+      "template": "pages/accounts/_acoes_linha.html",
+      "file": "templates/pages/accounts/_acoes_linha.html",
+      "lines": 23,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "e3253af8930705626afaebcfffe9ed20f6d5d7bf",
+      "routes": []
+    },
+    {
+      "template": "pages/accounts/_conteudo_linha.html",
+      "file": "templates/pages/accounts/_conteudo_linha.html",
+      "lines": 14,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "2f1f43bd091bba1d8ad180b3b067bd42e1e499d6",
+      "routes": []
+    },
+    {
+      "template": "pages/accounts/form.html",
+      "file": "templates/pages/accounts/form.html",
+      "lines": 117,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cartoes_escolha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "17235e739e870a53ae232f3aa7df4b3ba372797b",
+      "routes": [
+        "accounts:usuarios_editar",
+        "accounts:usuarios_novo"
+      ]
+    },
+    {
+      "template": "pages/accounts/lista.html",
+      "file": "templates/pages/accounts/lista.html",
+      "lines": 32,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cad_rail.html",
+        "components/v32/lista_registros.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "b14a4d0ae717f7eca451686c2dae8fc716dc2410",
+      "routes": [
+        "accounts:usuarios_lista"
+      ]
+    },
+    {
+      "template": "pages/agenda/_assinar.html",
+      "file": "templates/pages/agenda/_assinar.html",
+      "lines": 73,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": false,
+      "sha1_normalized": "5b2b4af2f15fda7fa9d14b9abd21d8b33a147092",
+      "routes": []
+    },
+    {
+      "template": "pages/agenda/_criar.html",
+      "file": "templates/pages/agenda/_criar.html",
+      "lines": 46,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": false,
+      "sha1_normalized": "2b79023d5c2d12689bc2f0cb4280926dca0c033b",
+      "routes": []
+    },
+    {
+      "template": "pages/agenda/_detalhe.html",
+      "file": "templates/pages/agenda/_detalhe.html",
+      "lines": 245,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "c5f0a72a2581c0169fd0a6afeadf5864e2ef040e",
+      "routes": [
+        "agenda:detalhe"
+      ]
+    },
+    {
+      "template": "pages/agenda/escala.html",
+      "file": "templates/pages/agenda/escala.html",
+      "lines": 101,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "aed9e217a7096400188711b2a6e7e587e2376477",
+      "routes": [
+        "agenda:escala"
+      ]
+    },
+    {
+      "template": "pages/agenda/painel.html",
+      "file": "templates/pages/agenda/painel.html",
+      "lines": 153,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "pages/agenda/_assinar.html",
+        "pages/agenda/_criar.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "be6a37ea7d7b169c6d15ab24310d0509371dcfc8",
+      "routes": [
+        "agenda:painel"
+      ]
+    },
+    {
+      "template": "pages/agenda/pauta.html",
+      "file": "templates/pages/agenda/pauta.html",
+      "lines": 75,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "7d52338c450da5b44026c120199843376b8d9c60",
+      "routes": []
+    },
+    {
+      "template": "pages/ascom_cadastros/_acoes_linha.html",
+      "file": "templates/pages/ascom_cadastros/_acoes_linha.html",
+      "lines": 17,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "24d88fd81984d27a55ee7c9146d000768645da66",
+      "routes": []
+    },
+    {
+      "template": "pages/ascom_cadastros/_conteudo_linha.html",
+      "file": "templates/pages/ascom_cadastros/_conteudo_linha.html",
+      "lines": 9,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "e54c75ffc0a95a1d0afbf4068857617bf1127c79",
+      "routes": []
+    },
+    {
+      "template": "pages/ascom_cadastros/_modal.html",
+      "file": "templates/pages/ascom_cadastros/_modal.html",
+      "lines": 35,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "c50ea20acbd70e079fc8e576a45b6ece38e31682",
+      "routes": []
+    },
+    {
+      "template": "pages/ascom_cadastros/lista.html",
+      "file": "templates/pages/ascom_cadastros/lista.html",
+      "lines": 37,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cad_rail.html",
+        "components/v32/lista_registros.html",
+        "pages/ascom_cadastros/_modal.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "3a0dd2d52a3518db9548d95dde45c3cae61d183b",
+      "routes": []
+    },
+    {
+      "template": "pages/atendimento_imprensa/_acoes_linha.html",
+      "file": "templates/pages/atendimento_imprensa/_acoes_linha.html",
+      "lines": 15,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "b8375c9b3d8943a6d4574fc03c2e062dcaa2fe84",
+      "routes": []
+    },
+    {
+      "template": "pages/atendimento_imprensa/_conteudo_linha.html",
+      "file": "templates/pages/atendimento_imprensa/_conteudo_linha.html",
+      "lines": 15,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "4621c042191999733c6dce6b200622d30e6dfc49",
+      "routes": []
+    },
+    {
+      "template": "pages/atendimento_imprensa/form.html",
+      "file": "templates/pages/atendimento_imprensa/form.html",
+      "lines": 173,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html",
+        "components/v32/andamento_secao.html",
+        "components/v32/andamento_topo.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/historico_status.html",
+        "components/v32/preencher_por_email.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "c3d160e101b3121f19d18a5d6a9b5c705aed8eda",
+      "routes": [
+        "atendimento_imprensa:editar",
+        "atendimento_imprensa:novo"
+      ]
+    },
+    {
+      "template": "pages/atendimento_imprensa/lista.html",
+      "file": "templates/pages/atendimento_imprensa/lista.html",
+      "lines": 32,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/cad_rail.html",
+        "components/v32/lista_registros.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "18c6d1af639546c037d1aceaf6be572f8e670777",
+      "routes": [
+        "atendimento_imprensa:lista"
+      ]
+    },
+    {
+      "template": "pages/atendimento_imprensa/painel.html",
+      "file": "templates/pages/atendimento_imprensa/painel.html",
+      "lines": 113,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/lista_embutida.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 2,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "0d829b1dc0c77dbf7c56eb23776cca97c8fca0cb",
+      "routes": [
+        "atendimento_imprensa:painel"
+      ]
+    },
+    {
+      "template": "pages/auth/alterar_senha.html",
+      "file": "templates/pages/auth/alterar_senha.html",
+      "lines": 109,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/page_header.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "59fa5a74b8a748a419c68c3787ea3c6ddbf3c890",
+      "routes": [
+        "accounts:alterar_senha"
+      ]
+    },
+    {
+      "template": "pages/auth/login.html",
+      "file": "templates/pages/auth/login.html",
+      "lines": 82,
+      "extends": [
+        "layouts/auth.html"
+      ],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "729f727b2fedc38854091b2c3125dbcb11d2b8d6",
+      "routes": [
+        "accounts:login"
+      ]
+    },
+    {
+      "template": "pages/auth/senha_reset.html",
+      "file": "templates/pages/auth/senha_reset.html",
+      "lines": 53,
+      "extends": [
+        "layouts/auth.html"
+      ],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "cd2c565d421ad63fdb582a36babc43b129111f06",
+      "routes": []
+    },
+    {
+      "template": "pages/auth/senha_reset_concluido.html",
+      "file": "templates/pages/auth/senha_reset_concluido.html",
+      "lines": 22,
+      "extends": [
+        "layouts/auth.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "d95d9f17b0999bce72fb3dfce8abe42f0e12e939",
+      "routes": []
+    },
+    {
+      "template": "pages/auth/senha_reset_confirmar.html",
+      "file": "templates/pages/auth/senha_reset_confirmar.html",
+      "lines": 58,
+      "extends": [
+        "layouts/auth.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "399fa3707ec97d1ca27415f6298edff0a9dd0851",
+      "routes": []
+    },
+    {
+      "template": "pages/auth/senha_reset_enviado.html",
+      "file": "templates/pages/auth/senha_reset_enviado.html",
+      "lines": 22,
+      "extends": [
+        "layouts/auth.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "de4eb19041ddfca2db258033b27899e645bad1c9",
+      "routes": []
+    },
+    {
+      "template": "pages/cadastros/_acoes_linha.html",
+      "file": "templates/pages/cadastros/_acoes_linha.html",
+      "lines": 20,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "78bfa9237659494f8d070897b86539f912b9f315",
+      "routes": []
+    },
+    {
+      "template": "pages/cadastros/_modal_form.html",
+      "file": "templates/pages/cadastros/_modal_form.html",
+      "lines": 36,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "48033e10e5888792dbc33765281182466c4eff54",
+      "routes": [
+        "cadastros:editar",
+        "cadastros:novo"
+      ]
+    },
+    {
+      "template": "pages/cadastros/index.html",
+      "file": "templates/pages/cadastros/index.html",
+      "lines": 32,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/cad_rail.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "9545c7b84a603a94ed15b7eeb65b74bbbf78bcc4",
+      "routes": [
+        "cadastros:index"
+      ]
+    },
+    {
+      "template": "pages/cadastros/lista.html",
+      "file": "templates/pages/cadastros/lista.html",
+      "lines": 114,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/cad_rail.html",
+        "pages/cadastros/_acoes_linha.html",
+        "pages/cadastros/_modal_form.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "consulta"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "7631f18ad857bb5f553e2639e7ab3b14dd0dfd3b",
+      "routes": []
+    },
+    {
+      "template": "pages/cadastros/modelo_tipo_evento.html",
+      "file": "templates/pages/cadastros/modelo_tipo_evento.html",
+      "lines": 88,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cartoes_escolha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 1,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "442dbf0371092005e400b943f22d2c47fd51a1a1",
+      "routes": [
+        "cadastros:modelo_tipo_evento"
+      ]
+    },
+    {
+      "template": "pages/campo/diario.html",
+      "file": "templates/pages/campo/diario.html",
+      "lines": 88,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "bedf9407fc53cafa5b7bfe007632dfca816e7cc8",
+      "routes": [
+        "campo_diario:pagina"
+      ]
+    },
+    {
+      "template": "pages/campo/link_invalido.html",
+      "file": "templates/pages/campo/link_invalido.html",
+      "lines": 17,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "b2280204196c7166be47760ee409fcee3bdf4824",
+      "routes": [
+        "campo_diario:pagina"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/_acoes_acao.html",
+      "file": "templates/pages/coffee_break/_acoes_acao.html",
+      "lines": 6,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "7d8fba687cf7b69d73953cc615cadf261131512f",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_acoes_cadastro.html",
+      "file": "templates/pages/coffee_break/_acoes_cadastro.html",
+      "lines": 20,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "953de01fbb65ce2e0d8284b12d563d160bfc25c6",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_acoes_linha.html",
+      "file": "templates/pages/coffee_break/_acoes_linha.html",
+      "lines": 27,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "a0298753f3eb31bc33058d6538e4f08928d494a0",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_acoes_lote.html",
+      "file": "templates/pages/coffee_break/_acoes_lote.html",
+      "lines": 12,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "42d1a330c51a02dac4b79120ff9dc729c3086ec3",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_andamento_campos.html",
+      "file": "templates/pages/coffee_break/_andamento_campos.html",
+      "lines": 13,
+      "extends": [],
+      "includes": [
+        "components/input.html",
+        "components/textarea.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "aa5d74f9eea4b45e4f17fb39b9d057971175759a",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_conteudo_cadastro.html",
+      "file": "templates/pages/coffee_break/_conteudo_cadastro.html",
+      "lines": 12,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "373a15ee0cb3c1d977d55021bbad823472fbc120",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_conteudo_linha.html",
+      "file": "templates/pages/coffee_break/_conteudo_linha.html",
+      "lines": 15,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "08ddcf8f615216c6f8cdec9f3c9b4c99481e529c",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_conteudo_lote.html",
+      "file": "templates/pages/coffee_break/_conteudo_lote.html",
+      "lines": 15,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "367deab946be5f41bf4347fa9e14917952e6184b",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_doc_gerado.html",
+      "file": "templates/pages/coffee_break/_doc_gerado.html",
+      "lines": 20,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "2742449541c16dd02b510f99851d4df4c28e4151",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_documento_inline.html",
+      "file": "templates/pages/coffee_break/_documento_inline.html",
+      "lines": 59,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "3ee6a4c84fe39ae0e37eaf65226c8c828834478c",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_documento_pdf.html",
+      "file": "templates/pages/coffee_break/_documento_pdf.html",
+      "lines": 37,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "5d0a0a1c490066ed87e1ebce5f0e0594c97a27d7",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_entrega_campos.html",
+      "file": "templates/pages/coffee_break/_entrega_campos.html",
+      "lines": 21,
+      "extends": [],
+      "includes": [
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "c58dea4a58e478c4de6650e9a53876aa4bd79cd4",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_erros_form.html",
+      "file": "templates/pages/coffee_break/_erros_form.html",
+      "lines": 10,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "b2177529fa5c747d59578bd532837f2c36a8a0a8",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_historico.html",
+      "file": "templates/pages/coffee_break/_historico.html",
+      "lines": 30,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "a44ee48570cba9423b0f8e77ffd15a8635816692",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_importar_processo.html",
+      "file": "templates/pages/coffee_break/_importar_processo.html",
+      "lines": 38,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "8ebbd6d73b50072e5a861e079fc1110925ea18e0",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/_modal_andamento.html",
+      "file": "templates/pages/coffee_break/_modal_andamento.html",
+      "lines": 27,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "pages/coffee_break/_andamento_campos.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "724b239059c4c1ec4525b2562b90c1694824c7da",
+      "routes": [
+        "coffee_break:andamento"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/_modal_cadastro.html",
+      "file": "templates/pages/coffee_break/_modal_cadastro.html",
+      "lines": 66,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "9e844822622f7ef8c707cfaf48feebba6d7a857f",
+      "routes": [
+        "coffee_break:cadastro_editar",
+        "coffee_break:cadastro_novo"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/_modal_cancelar.html",
+      "file": "templates/pages/coffee_break/_modal_cancelar.html",
+      "lines": 21,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "9aff4315ae7360515561035b4c0e96767188586e",
+      "routes": [
+        "coffee_break:cancelar"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/_modal_entrega.html",
+      "file": "templates/pages/coffee_break/_modal_entrega.html",
+      "lines": 26,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "pages/coffee_break/_entrega_campos.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "418fcfe840f74071b1f338ac3f740176597138de",
+      "routes": [
+        "coffee_break:entrega"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/_pedir_coffee_break.html",
+      "file": "templates/pages/coffee_break/_pedir_coffee_break.html",
+      "lines": 17,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "d46505da19df121ea296724d6d1458418ada1e51",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/cadastro_lista.html",
+      "file": "templates/pages/coffee_break/cadastro_lista.html",
+      "lines": 41,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cad_rail.html",
+        "components/v32/lista_registros.html",
+        "pages/coffee_break/_modal_cadastro.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "8fe61ee5ac06aad925051a0add9a44168969e2e6",
+      "routes": [
+        "coffee_break:cadastro_lista"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/certidoes.html",
+      "file": "templates/pages/coffee_break/certidoes.html",
+      "lines": 105,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/page_header.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 1,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "3ff991f2b446f6e855e20899b7bcc4295f10d1bf",
+      "routes": [
+        "coffee_break:certidoes"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/entrega.html",
+      "file": "templates/pages/coffee_break/entrega.html",
+      "lines": 59,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "pages/coffee_break/_entrega_campos.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "330414162a972155aa50a0bd6b7453a6beaa7c46",
+      "routes": [
+        "coffee_break:entrega"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/enviar_email.html",
+      "file": "templates/pages/coffee_break/enviar_email.html",
+      "lines": 80,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/textarea.html",
+        "components/v32/breadcrumb.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "191a444bfa40972b21a1e0c1ed4595cc1d6510cd",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/etapa_nota.html",
+      "file": "templates/pages/coffee_break/etapa_nota.html",
+      "lines": 180,
+      "extends": [
+        "pages/coffee_break/solicitacao_base.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/v32/lista_escolha.html",
+        "documentos/editor/_recursos.html",
+        "pages/coffee_break/_documento_inline.html",
+        "pages/coffee_break/_erros_form.html"
+      ],
+      "blocks": [
+        "etapa",
+        "etapa_js"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "03195330283d00fc01c65e674ddbc406606f3505",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/etapa_protocolo.html",
+      "file": "templates/pages/coffee_break/etapa_protocolo.html",
+      "lines": 196,
+      "extends": [
+        "pages/coffee_break/solicitacao_base.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/textarea.html",
+        "components/v32/copiaveis.html",
+        "components/v32/dialogo_baixar.html",
+        "pages/coffee_break/_erros_form.html",
+        "pages/coffee_break/_importar_processo.html"
+      ],
+      "blocks": [
+        "etapa",
+        "etapa_js"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "e7a626c5cef31ae5c0bf8fd14c87cc0b4849f7e5",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/form.html",
+      "file": "templates/pages/coffee_break/form.html",
+      "lines": 209,
+      "extends": [
+        "pages/coffee_break/solicitacao_base.html"
+      ],
+      "includes": [
+        "components/endereco_campos.html",
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/v32/preencher_por_email.html",
+        "documentos/editor/_recursos.html",
+        "pages/coffee_break/_documento_inline.html",
+        "pages/coffee_break/_erros_form.html",
+        "pages/coffee_break/_historico.html"
+      ],
+      "blocks": [
+        "avisos_etapa",
+        "etapa",
+        "etapa_js",
+        "topo_acoes"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "f49307917c98d8a5512449f4e11570ccfa19b56d",
+      "routes": [
+        "coffee_break:nova"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/importacao_processo.html",
+      "file": "templates/pages/coffee_break/importacao_processo.html",
+      "lines": 188,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cartoes_escolha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "7809e6a81176587c6367f5ef6bb893b33e76210a",
+      "routes": [
+        "coffee_break:importacao_processo"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/importar_planilha.html",
+      "file": "templates/pages/coffee_break/importar_planilha.html",
+      "lines": 82,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "5409f05adcff973ffd5783077d7d789d0653db83",
+      "routes": [
+        "coffee_break:importar_planilha"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/lote_detalhe.html",
+      "file": "templates/pages/coffee_break/lote_detalhe.html",
+      "lines": 88,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/lista_embutida.html",
+        "pages/coffee_break/_importar_processo.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "7d42d4653c33810734d800fbe268e096c3159e71",
+      "routes": [
+        "coffee_break:lote_detalhe"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/lotes_lista.html",
+      "file": "templates/pages/coffee_break/lotes_lista.html",
+      "lines": 37,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cad_rail.html",
+        "components/v32/lista_registros.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "ef1b35da1985688dd1ddbb534bb68495f0e88b6a",
+      "routes": [
+        "coffee_break:lotes"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/painel.html",
+      "file": "templates/pages/coffee_break/painel.html",
+      "lines": 109,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/lista_embutida.html",
+        "components/v32/page_header.html",
+        "components/v32/summary_card.html",
+        "pages/coffee_break/_importar_processo.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "970a550a6bb8f8c488e74b952904f9c5df09e683",
+      "routes": [
+        "coffee_break:painel"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/relatorio_contrato.html",
+      "file": "templates/pages/coffee_break/relatorio_contrato.html",
+      "lines": 34,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "coffee_break/documentos/_relatorio_contrato_corpo.html",
+        "components/icon.html",
+        "components/v32/breadcrumb.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "ea4c52b57da9749f40bd2cbb8175bc24898e1ffe",
+      "routes": [
+        "coffee_break:relatorio_contrato"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/solicitacao_base.html",
+      "file": "templates/pages/coffee_break/solicitacao_base.html",
+      "lines": 126,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/v32/breadcrumb.html"
+      ],
+      "blocks": [
+        "avisos_etapa",
+        "conteudo",
+        "etapa",
+        "etapa_js",
+        "extra_js",
+        "title",
+        "topo_acoes"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "a4c9127b61ecf0703d4ece8ca0c7cc45442ed083",
+      "routes": []
+    },
+    {
+      "template": "pages/coffee_break/solicitacoes_lista.html",
+      "file": "templates/pages/coffee_break/solicitacoes_lista.html",
+      "lines": 49,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cad_rail.html",
+        "components/v32/dialogo_baixar.html",
+        "components/v32/lista_registros.html",
+        "pages/coffee_break/_importar_processo.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "f51fa31a9bd10380c075b73fcb79a62ab0c83f9c",
+      "routes": [
+        "coffee_break:solicitacoes"
+      ]
+    },
+    {
+      "template": "pages/coffee_break/virada_exercicio.html",
+      "file": "templates/pages/coffee_break/virada_exercicio.html",
+      "lines": 83,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "9287302d0f5b4c0dcd0030f6b5771a491084edff",
+      "routes": [
+        "coffee_break:virada_exercicio"
+      ]
+    },
+    {
+      "template": "pages/core/_acoes_notificacao.html",
+      "file": "templates/pages/core/_acoes_notificacao.html",
+      "lines": 12,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "8a6243679cf6ee9a2c0fd9124056579ff110dff4",
+      "routes": []
+    },
+    {
+      "template": "pages/core/_conteudo_notificacao.html",
+      "file": "templates/pages/core/_conteudo_notificacao.html",
+      "lines": 12,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "1b63435a87bb98b5bc11dff16f2a9173c543217e",
+      "routes": []
+    },
+    {
+      "template": "pages/core/hub.html",
+      "file": "templates/pages/core/hub.html",
+      "lines": 67,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/page_header.html",
+        "components/v32/triagem_email.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "5dbdfa7d52f9591db5101e6cf403ab61f149b15f",
+      "routes": [
+        "core:home"
+      ]
+    },
+    {
+      "template": "pages/core/notificacoes.html",
+      "file": "templates/pages/core/notificacoes.html",
+      "lines": 50,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cad_rail.html",
+        "components/v32/lista_embutida.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "9171dd81dda4743b52defc61de4ffbe20d6cb09f",
+      "routes": [
+        "core:notificacoes"
+      ]
+    },
+    {
+      "template": "pages/dashboard/index.html",
+      "file": "templates/pages/dashboard/index.html",
+      "lines": 103,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/lista_embutida.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 1,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "80784328043f0f4e3935c539abf230a20ed56e6a",
+      "routes": [
+        "dashboard:index"
+      ]
+    },
+    {
+      "template": "pages/demandas_eventos/_acoes_cadastro.html",
+      "file": "templates/pages/demandas_eventos/_acoes_cadastro.html",
+      "lines": 18,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "a074a76e073d4f62e02ef6d0e786fe3938e131c5",
+      "routes": []
+    },
+    {
+      "template": "pages/demandas_eventos/_acoes_linha.html",
+      "file": "templates/pages/demandas_eventos/_acoes_linha.html",
+      "lines": 16,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "51fa23165f53c80eb7a5baae5377059005f04689",
+      "routes": []
+    },
+    {
+      "template": "pages/demandas_eventos/_andamento.html",
+      "file": "templates/pages/demandas_eventos/_andamento.html",
+      "lines": 48,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "pages/demandas_eventos/_andamento_campos.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "24be57132ad03320887f03d7f235abe5cfe4682e",
+      "routes": []
+    },
+    {
+      "template": "pages/demandas_eventos/_andamento_campos.html",
+      "file": "templates/pages/demandas_eventos/_andamento_campos.html",
+      "lines": 30,
+      "extends": [],
+      "includes": [
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html",
+        "components/v32/cartoes_escolha.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "ef461266ac529d6dd1cd05a4275079fa29f18eb0",
+      "routes": []
+    },
+    {
+      "template": "pages/demandas_eventos/_conteudo_cadastro.html",
+      "file": "templates/pages/demandas_eventos/_conteudo_cadastro.html",
+      "lines": 11,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "bb4f6e05c526df45814e686f02d35232a1f22933",
+      "routes": []
+    },
+    {
+      "template": "pages/demandas_eventos/_conteudo_linha.html",
+      "file": "templates/pages/demandas_eventos/_conteudo_linha.html",
+      "lines": 15,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "36f0bf2be9cddd4291b426694681701cc6f2d0ce",
+      "routes": []
+    },
+    {
+      "template": "pages/demandas_eventos/_historico.html",
+      "file": "templates/pages/demandas_eventos/_historico.html",
+      "lines": 32,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "2551b8af99b22d951bd8efd34616561c12b660b6",
+      "routes": []
+    },
+    {
+      "template": "pages/demandas_eventos/_modal_andamento.html",
+      "file": "templates/pages/demandas_eventos/_modal_andamento.html",
+      "lines": 23,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "pages/demandas_eventos/_andamento_campos.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "61738c6d814cb779eb636026d411750d6ef89c52",
+      "routes": [
+        "demandas_eventos:andamento"
+      ]
+    },
+    {
+      "template": "pages/demandas_eventos/_modal_cadastro.html",
+      "file": "templates/pages/demandas_eventos/_modal_cadastro.html",
+      "lines": 45,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "39b574136947d0e4207595fc8c4db7cb7a42b769",
+      "routes": [
+        "demandas_eventos:cadastro_editar",
+        "demandas_eventos:cadastro_novo"
+      ]
+    },
+    {
+      "template": "pages/demandas_eventos/_modal_responder.html",
+      "file": "templates/pages/demandas_eventos/_modal_responder.html",
+      "lines": 22,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "pages/demandas_eventos/_responder_campos.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "5c99ab30c2055c130c6eaacd7f1c373b24030311",
+      "routes": [
+        "demandas_eventos:responder"
+      ]
+    },
+    {
+      "template": "pages/demandas_eventos/_origem_na_solicitacao.html",
+      "file": "templates/pages/demandas_eventos/_origem_na_solicitacao.html",
+      "lines": 14,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "palestras"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "0ccec36493ef2f77a158ecebb55a895db6585296",
+      "routes": []
+    },
+    {
+      "template": "pages/demandas_eventos/_responder_campos.html",
+      "file": "templates/pages/demandas_eventos/_responder_campos.html",
+      "lines": 31,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/select.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "1dee0ca03e4968088ae5177c2d10329411a6126c",
+      "routes": []
+    },
+    {
+      "template": "pages/demandas_eventos/cadastro_lista.html",
+      "file": "templates/pages/demandas_eventos/cadastro_lista.html",
+      "lines": 36,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/demandas_rail.html",
+        "components/v32/lista_registros.html",
+        "pages/demandas_eventos/_modal_cadastro.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "43a6c1286850d5cf4e7ff43e030465a20cf284c6",
+      "routes": [
+        "demandas_eventos:cadastro_lista"
+      ]
+    },
+    {
+      "template": "pages/demandas_eventos/dashboard.html",
+      "file": "templates/pages/demandas_eventos/dashboard.html",
+      "lines": 35,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/v32/breadcrumb.html",
+        "components/v32/lista_embutida.html",
+        "components/v32/page_header.html",
+        "components/v32/summary_card.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "19343e0d4b2844b13880c534a56b68a2297808f3",
+      "routes": [
+        "demandas_eventos:dashboard"
+      ]
+    },
+    {
+      "template": "pages/demandas_eventos/form.html",
+      "file": "templates/pages/demandas_eventos/form.html",
+      "lines": 242,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/date_range.html",
+        "components/endereco_campos.html",
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html",
+        "components/v32/andamento_protocolo.html",
+        "components/v32/avisos_conflito.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cartoes_escolha.html",
+        "components/v32/lista_escolha.html",
+        "components/v32/preencher_por_email.html",
+        "pages/coffee_break/_pedir_coffee_break.html",
+        "pages/demandas_eventos/_andamento.html",
+        "pages/demandas_eventos/_historico.html",
+        "pages/viagens_termos/_destino_linha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "bff475ed438109c657f90af29a6741f1c5b8d4be",
+      "routes": [
+        "demandas_eventos:editar",
+        "demandas_eventos:nova"
+      ]
+    },
+    {
+      "template": "pages/demandas_eventos/lista.html",
+      "file": "templates/pages/demandas_eventos/lista.html",
+      "lines": 37,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cad_rail.html",
+        "components/v32/lista_registros.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "81da008b24f77b7d97c13ffca2e9ccd11faef50f",
+      "routes": [
+        "demandas_eventos:lista"
+      ]
+    },
+    {
+      "template": "pages/demandas_eventos/responder.html",
+      "file": "templates/pages/demandas_eventos/responder.html",
+      "lines": 28,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "pages/demandas_eventos/_responder_campos.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "05a875ae87c4d911a3e808d4f955b5b2768db429",
+      "routes": [
+        "demandas_eventos:responder"
+      ]
+    },
+    {
+      "template": "pages/documentos/modelos.html",
+      "file": "templates/pages/documentos/modelos.html",
+      "lines": 70,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "14ca448fd54d0bb7ab4f9f0507732365e5509002",
+      "routes": [
+        "documentos:modelos",
+        "documentos:modelos_modulo"
+      ]
+    },
+    {
+      "template": "pages/publicacoes/_acoes_linha.html",
+      "file": "templates/pages/publicacoes/_acoes_linha.html",
+      "lines": 21,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "73815ca295fdc236f8df4020f56fab6ddee5a5f6",
+      "routes": []
+    },
+    {
+      "template": "pages/publicacoes/_conteudo_linha.html",
+      "file": "templates/pages/publicacoes/_conteudo_linha.html",
+      "lines": 15,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "ea032653cec096ad94af0f000e8526b52436e529",
+      "routes": []
+    },
+    {
+      "template": "pages/publicacoes/form.html",
+      "file": "templates/pages/publicacoes/form.html",
+      "lines": 149,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/v32/andamento_secao.html",
+        "components/v32/andamento_topo.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/historico_status.html",
+        "components/v32/preencher_por_email.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "c7a60c6263f67b42c90192efabc450de9d45fbf7",
+      "routes": [
+        "publicacoes:editar",
+        "publicacoes:nova"
+      ]
+    },
+    {
+      "template": "pages/publicacoes/lista.html",
+      "file": "templates/pages/publicacoes/lista.html",
+      "lines": 32,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/cad_rail.html",
+        "components/v32/lista_registros.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "65ad35cf446d3483f967577d280f5efa604139ad",
+      "routes": [
+        "publicacoes:lista"
+      ]
+    },
+    {
+      "template": "pages/publicacoes/painel.html",
+      "file": "templates/pages/publicacoes/painel.html",
+      "lines": 100,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/lista_embutida.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 2,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "33b51837f55673c6a26325c2d84900ee04eb6eb4",
+      "routes": [
+        "publicacoes:painel"
+      ]
+    },
+    {
+      "template": "pages/publico/_campo.html",
+      "file": "templates/pages/publico/_campo.html",
+      "lines": 8,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "ca5929a60f67cfcb699cda13f39551b77ea4324f",
+      "routes": []
+    },
+    {
+      "template": "pages/publico/fornecedor_envio.html",
+      "file": "templates/pages/publico/fornecedor_envio.html",
+      "lines": 87,
+      "extends": [
+        "layouts/auth.html"
+      ],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "69270cddbf3000da4b515ce242c790f6dd604f5f",
+      "routes": [
+        "fornecedor_publico:envio"
+      ]
+    },
+    {
+      "template": "pages/publico/fornecedor_invalido.html",
+      "file": "templates/pages/publico/fornecedor_invalido.html",
+      "lines": 20,
+      "extends": [
+        "layouts/auth.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "3d0e7f929c16ec90434e296b606c4c1a9bbe77fe",
+      "routes": []
+    },
+    {
+      "template": "pages/publico/pedido_acompanhar.html",
+      "file": "templates/pages/publico/pedido_acompanhar.html",
+      "lines": 26,
+      "extends": [
+        "layouts/auth.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "68cfdbaa9a51deb2a2fa7e847c124dab3e2a3ae2",
+      "routes": [
+        "pedido_publico:acompanhar"
+      ]
+    },
+    {
+      "template": "pages/publico/pedido_form.html",
+      "file": "templates/pages/publico/pedido_form.html",
+      "lines": 69,
+      "extends": [
+        "layouts/auth.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "pages/publico/_campo.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "0d2c491e10eae9856ffcbbf053d833084e8498e5",
+      "routes": []
+    },
+    {
+      "template": "pages/publico/pedido_recebido.html",
+      "file": "templates/pages/publico/pedido_recebido.html",
+      "lines": 30,
+      "extends": [
+        "layouts/auth.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "690adce64b9ff29b46898442ce5dd0a8c8a7b57f",
+      "routes": [
+        "pedido_publico:recebido"
+      ]
+    },
+    {
+      "template": "pages/relatorios/_secao.html",
+      "file": "templates/pages/relatorios/_secao.html",
+      "lines": 31,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "0bcb0d56c06e68ee54e7bd370f3c82b2cecdb17b",
+      "routes": []
+    },
+    {
+      "template": "pages/relatorios/painel.html",
+      "file": "templates/pages/relatorios/painel.html",
+      "lines": 41,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/select.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/summary_card.html",
+        "pages/relatorios/_secao.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "a81b876b40d92eea721929deb3df792850938bc4",
+      "routes": [
+        "relatorios:painel"
+      ]
+    },
+    {
+      "template": "pages/solicitacoes/_acoes_linha.html",
+      "file": "templates/pages/solicitacoes/_acoes_linha.html",
+      "lines": 34,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "77a7c2a447e240ecb19405a62d3482e40e1f988d",
+      "routes": []
+    },
+    {
+      "template": "pages/solicitacoes/_cartao_viagem.html",
+      "file": "templates/pages/solicitacoes/_cartao_viagem.html",
+      "lines": 52,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "pages/viagens_viagem/_contador_servidores.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "ed49327d492370167bbdf1998e8e22195c9c7712",
+      "routes": []
+    },
+    {
+      "template": "pages/solicitacoes/_conteudo_linha.html",
+      "file": "templates/pages/solicitacoes/_conteudo_linha.html",
+      "lines": 15,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "cc13bfa3d521f74216f37e5f13e2cac598d8560c",
+      "routes": []
+    },
+    {
+      "template": "pages/solicitacoes/_equipes.html",
+      "file": "templates/pages/solicitacoes/_equipes.html",
+      "lines": 35,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 1,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "e5e4581da9f2876fb6d9834736c3f1260183277e",
+      "routes": []
+    },
+    {
+      "template": "pages/solicitacoes/_historico.html",
+      "file": "templates/pages/solicitacoes/_historico.html",
+      "lines": 41,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "db3d6d811308156be1549aedb12d1b5160697da8",
+      "routes": []
+    },
+    {
+      "template": "pages/solicitacoes/_modal_anexo.html",
+      "file": "templates/pages/solicitacoes/_modal_anexo.html",
+      "lines": 23,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/upload_anexos.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "a4e031b6b37d9c649f986efc441b866e4a7c001b",
+      "routes": [
+        "solicitacoes:anexo_adicionar"
+      ]
+    },
+    {
+      "template": "pages/solicitacoes/_painel_filtros.html",
+      "file": "templates/pages/solicitacoes/_painel_filtros.html",
+      "lines": 24,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "dad7048b296855e2ae756ec6dba84d9a25dc27cb",
+      "routes": []
+    },
+    {
+      "template": "pages/solicitacoes/form.html",
+      "file": "templates/pages/solicitacoes/form.html",
+      "lines": 415,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/date_range.html",
+        "components/endereco_campos.html",
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html",
+        "components/upload_anexos.html",
+        "components/v32/andamento_protocolo.html",
+        "components/v32/avisos_conflito.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/cartoes_escolha.html",
+        "components/v32/preencher_por_email.html",
+        "pages/coffee_break/_pedir_coffee_break.html",
+        "pages/demandas_eventos/_origem_na_solicitacao.html",
+        "pages/solicitacoes/_cartao_viagem.html",
+        "pages/solicitacoes/_equipes.html",
+        "pages/solicitacoes/_historico.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "0d5e66a0fa22d20407d0e76fc580e0cb0beb60cf",
+      "routes": [
+        "solicitacoes:editar",
+        "solicitacoes:nova"
+      ]
+    },
+    {
+      "template": "pages/solicitacoes/lista.html",
+      "file": "templates/pages/solicitacoes/lista.html",
+      "lines": 34,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/cad_rail.html",
+        "components/v32/lista_registros.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "b0349e8d9203e7bc58f982573b0a32e2c30ed5e3",
+      "routes": [
+        "solicitacoes:lista"
+      ]
+    },
+    {
+      "template": "pages/viagens_cadastros/_acoes_com_padrao.html",
+      "file": "templates/pages/viagens_cadastros/_acoes_com_padrao.html",
+      "lines": 6,
+      "extends": [],
+      "includes": [
+        "pages/viagens_cadastros/_acoes_linha.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "cae1d3d387c5ec25e363f9788d835e11034ab847",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_cadastros/_acoes_linha.html",
+      "file": "templates/pages/viagens_cadastros/_acoes_linha.html",
+      "lines": 27,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "ecccb616b716976880ca3ef508d1eda908c6857f",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_cadastros/_campo.html",
+      "file": "templates/pages/viagens_cadastros/_campo.html",
+      "lines": 34,
+      "extends": [],
+      "includes": [
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html",
+        "components/v32/multi_pick.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "abaffe5ec3ca37eceeb8a322d0925bb210256960",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_cadastros/_dialogo_exclusao.html",
+      "file": "templates/pages/viagens_cadastros/_dialogo_exclusao.html",
+      "lines": 8,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": false,
+      "sha1_normalized": "0962f634ca408ddd32523600a62cbc59aa7fe5ab",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_cadastros/_modal_form.html",
+      "file": "templates/pages/viagens_cadastros/_modal_form.html",
+      "lines": 41,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "pages/viagens_cadastros/_campo.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "7c3357c3fca526e007a2ad9a6ddf3509a8629b74",
+      "routes": [
+        "viagens_cadastros:diaria_editar",
+        "viagens_cadastros:diaria_nova",
+        "viagens_cadastros:editar",
+        "viagens_cadastros:novo"
+      ]
+    },
+    {
+      "template": "pages/viagens_cadastros/_paginacao_nav.html",
+      "file": "templates/pages/viagens_cadastros/_paginacao_nav.html",
+      "lines": 26,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "76dd8426a3bc9a2ddfaf39d163d2e174f917db7c",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_cadastros/confirmar_exclusao.html",
+      "file": "templates/pages/viagens_cadastros/confirmar_exclusao.html",
+      "lines": 44,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/page_header.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "d43354dfe64a8aea2e83f90d0cc2ed7d47f06bd1",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_cadastros/lista.html",
+      "file": "templates/pages/viagens_cadastros/lista.html",
+      "lines": 135,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/cad_rail.html",
+        "pages/viagens_cadastros/_dialogo_exclusao.html",
+        "pages/viagens_cadastros/_modal_form.html",
+        "pages/viagens_cadastros/_paginacao_nav.html"
+      ],
+      "blocks": [
+        "barra_fim",
+        "conteudo",
+        "extra_js",
+        "filtros",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "f96ca0494bc2e3572896274e33e44d5133bf3819",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_cadastros/servidores/lista.html",
+      "file": "templates/pages/viagens_cadastros/servidores/lista.html",
+      "lines": 7,
+      "extends": [
+        "pages/viagens_cadastros/lista.html"
+      ],
+      "includes": [
+        "components/v32/filtro_fc.html"
+      ],
+      "blocks": [
+        "filtros"
+      ],
+      "static": [],
+      "loads": [
+        "consulta"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "d9c95c2ac22d8e42e38e2d0d04b4b20a2b264ef7",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_cadastros/viaturas/confirmar_exclusao.html",
+      "file": "templates/pages/viagens_cadastros/viaturas/confirmar_exclusao.html",
+      "lines": 17,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "77cd90fbfa749f9adfe6532f6ce51dc5b285d69a",
+      "routes": [
+        "viagens_cadastros:excluir"
+      ]
+    },
+    {
+      "template": "pages/viagens_cadastros/viaturas/lista.html",
+      "file": "templates/pages/viagens_cadastros/viaturas/lista.html",
+      "lines": 27,
+      "extends": [
+        "pages/viagens_cadastros/lista.html"
+      ],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [
+        "filtros"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "13d99dd196a62718c5fe6bb21f40de720bfedf59",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_oficios/_acoes_linha.html",
+      "file": "templates/pages/viagens_oficios/_acoes_linha.html",
+      "lines": 40,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "b9c50b18f245037183654f49b172594b94c29183",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_oficios/_artefatos.html",
+      "file": "templates/pages/viagens_oficios/_artefatos.html",
+      "lines": 2,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "9f468db1737760373403cb5f7054020d5e707098",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_oficios/_campos.html",
+      "file": "templates/pages/viagens_oficios/_campos.html",
+      "lines": 14,
+      "extends": [],
+      "includes": [
+        "components/input.html",
+        "components/select.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "14d906fa1d3bbc975b14fc28d15933c57d07d7c8",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_oficios/_documento_inline.html",
+      "file": "templates/pages/viagens_oficios/_documento_inline.html",
+      "lines": 52,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "9d7ae6896ba04001e70137e27bebdfe1bb622b11",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_oficios/_justificativa_acoes.html",
+      "file": "templates/pages/viagens_oficios/_justificativa_acoes.html",
+      "lines": 26,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "feba9dbccc50b8720e2946734eeb25dc673d0d51",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_oficios/_justificativa_linha.html",
+      "file": "templates/pages/viagens_oficios/_justificativa_linha.html",
+      "lines": 13,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "7c3dd7b33048a4ca501d7a8238f0c14887a4a75e",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_oficios/_justificativa_modal.html",
+      "file": "templates/pages/viagens_oficios/_justificativa_modal.html",
+      "lines": 57,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/select.html",
+        "components/textarea.html",
+        "components/v32/lista_escolha.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "b1856e578f0f731f56d73e78a1478034e306b6df",
+      "routes": [
+        "viagens_oficios:justificativa_editar",
+        "viagens_oficios:justificativa_nova"
+      ]
+    },
+    {
+      "template": "pages/viagens_oficios/_linha.html",
+      "file": "templates/pages/viagens_oficios/_linha.html",
+      "lines": 15,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "a1f7b3811caa926835fffc36264dd9b8e08cbe64",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_oficios/assinatura.html",
+      "file": "templates/pages/viagens_oficios/assinatura.html",
+      "lines": 51,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/section_card.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "title"
+      ],
+      "static": [
+        "css/viagens-documentos.css"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "3efefa1009f64439602ce3080e9419fc7bf77db1",
+      "routes": [
+        "viagens_oficios:assinatura_artefato",
+        "viagens_ordens:assinatura_artefato"
+      ]
+    },
+    {
+      "template": "pages/viagens_oficios/configuracoes.html",
+      "file": "templates/pages/viagens_oficios/configuracoes.html",
+      "lines": 245,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "pages/viagens_cadastros/_campo.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "3e0420479c61c95dd44bcea71d1a96c7696dea69",
+      "routes": [
+        "viagens_oficios:institucional"
+      ]
+    },
+    {
+      "template": "pages/viagens_oficios/form.html",
+      "file": "templates/pages/viagens_oficios/form.html",
+      "lines": 346,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html",
+        "components/v32/avisos_conflito.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/copiaveis.html",
+        "components/v32/dialogo_assinado.html",
+        "components/v32/lista_escolha.html",
+        "documentos/editor/_recursos.html",
+        "pages/viagens_oficios/_documento_inline.html",
+        "pages/viagens_roteiros/_editor.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "4677a0cc12a46389bdefbecdb1b8f4f3563c906d",
+      "routes": [
+        "viagens_oficios:editar",
+        "viagens_oficios:novo"
+      ]
+    },
+    {
+      "template": "pages/viagens_oficios/form_simples.html",
+      "file": "templates/pages/viagens_oficios/form_simples.html",
+      "lines": 46,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/section_card.html",
+        "pages/viagens_oficios/_campos.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "title"
+      ],
+      "static": [
+        "css/viagens-documentos.css"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "d63badc8ee22dbc443c37d6bb2265a39cc70288b",
+      "routes": [
+        "viagens_oficios:numeracao"
+      ]
+    },
+    {
+      "template": "pages/viagens_oficios/justificativas.html",
+      "file": "templates/pages/viagens_oficios/justificativas.html",
+      "lines": 123,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/icone_documento.html",
+        "components/v32/cad_rail.html",
+        "components/v32/dialogo_baixar.html",
+        "pages/viagens_oficios/_justificativa_acoes.html",
+        "pages/viagens_oficios/_justificativa_linha.html",
+        "pages/viagens_oficios/_justificativa_modal.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "4ee13c24a104a8902c6e396e2701377f284cdd8d",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_oficios/lista.html",
+      "file": "templates/pages/viagens_oficios/lista.html",
+      "lines": 162,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/icone_documento.html",
+        "components/input.html",
+        "components/select.html",
+        "components/v32/cad_rail.html",
+        "components/v32/dialogo_assinado.html",
+        "components/v32/dialogo_baixar.html",
+        "pages/viagens_oficios/_acoes_linha.html",
+        "pages/viagens_oficios/_linha.html",
+        "pages/viagens_prestacoes/_importar_dialogo.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "c8c173998de5a6e355c1275323cae0f20064d6eb",
+      "routes": [
+        "viagens_oficios:lista"
+      ]
+    },
+    {
+      "template": "pages/viagens_ordens/_acoes_fim.html",
+      "file": "templates/pages/viagens_ordens/_acoes_fim.html",
+      "lines": 10,
+      "extends": [],
+      "includes": [
+        "components/v32/button.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "c7e49e09c40205e69ceb41f4dfbb8923e2208e8c",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_ordens/_acoes_linha.html",
+      "file": "templates/pages/viagens_ordens/_acoes_linha.html",
+      "lines": 50,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "0b28b99e70eff48a6b91dc0f5a2397d5cb9ccbf4",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_ordens/_conteudo_linha.html",
+      "file": "templates/pages/viagens_ordens/_conteudo_linha.html",
+      "lines": 14,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "23ff9577ada3ef6255daf897a43a6b28c466adde",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_ordens/form.html",
+      "file": "templates/pages/viagens_ordens/form.html",
+      "lines": 223,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/date_range.html",
+        "components/icon.html",
+        "components/select.html",
+        "components/textarea.html",
+        "components/v32/avisos_conflito.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/lista_escolha.html",
+        "components/v32/multi_pick.html",
+        "documentos/editor/_visualizador.html",
+        "pages/viagens_ordens/_acoes_fim.html",
+        "pages/viagens_termos/_destino_linha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags",
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "e73184afb1f62a85f6bfccc8689ed45cb816a620",
+      "routes": [
+        "viagens_ordens:editar",
+        "viagens_ordens:novo"
+      ]
+    },
+    {
+      "template": "pages/viagens_ordens/lista.html",
+      "file": "templates/pages/viagens_ordens/lista.html",
+      "lines": 121,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/icone_documento.html",
+        "components/v32/cad_rail.html",
+        "components/v32/dialogo_assinado.html",
+        "pages/viagens_ordens/_acoes_linha.html",
+        "pages/viagens_ordens/_conteudo_linha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "0173ab71bdc8a4edfc04910b732bd84b7e7490b9",
+      "routes": [
+        "viagens_ordens:lista"
+      ]
+    },
+    {
+      "template": "pages/viagens_planos/_acoes_fim.html",
+      "file": "templates/pages/viagens_planos/_acoes_fim.html",
+      "lines": 20,
+      "extends": [],
+      "includes": [
+        "components/v32/button.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "8aeef3951056a75334988417435448f0ebb01337",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_planos/_acoes_linha.html",
+      "file": "templates/pages/viagens_planos/_acoes_linha.html",
+      "lines": 42,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "836529c69ef4fd80020d8ef9a215f834ff410667",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_planos/_conteudo_linha.html",
+      "file": "templates/pages/viagens_planos/_conteudo_linha.html",
+      "lines": 14,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "c682121a4dae22227cc9efe87aee9fffac1e89a0",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_planos/_coordenador.html",
+      "file": "templates/pages/viagens_planos/_coordenador.html",
+      "lines": 35,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/select.html",
+        "components/v32/nome_sugerido.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "bb83b66c0d2e779ae06f97efc3a01c6546d2051f",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_planos/_deslocamento.html",
+      "file": "templates/pages/viagens_planos/_deslocamento.html",
+      "lines": 67,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": false,
+      "sha1_normalized": "9dff33ec95970fa1260f5fef727e7c0914cfc3c2",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_planos/_efetivo_linha.html",
+      "file": "templates/pages/viagens_planos/_efetivo_linha.html",
+      "lines": 28,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "951c572a3bdf68ae797242e01a937ac880e9b3ad",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_planos/_resumo_evento.html",
+      "file": "templates/pages/viagens_planos/_resumo_evento.html",
+      "lines": 36,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "6b5bcd00dc16458bc33d800f3f8866b85b54640a",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_planos/form.html",
+      "file": "templates/pages/viagens_planos/form.html",
+      "lines": 335,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/date_range.html",
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/dialogo_assinado.html",
+        "documentos/editor/_recursos.html",
+        "pages/viagens_oficios/_documento_inline.html",
+        "pages/viagens_planos/_acoes_fim.html",
+        "pages/viagens_planos/_coordenador.html",
+        "pages/viagens_planos/_deslocamento.html",
+        "pages/viagens_planos/_efetivo_linha.html",
+        "pages/viagens_planos/_resumo_evento.html",
+        "pages/viagens_termos/_destino_linha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "5012e7e0899911200adfbd23f93ef3720d1e345d",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_planos/lista.html",
+      "file": "templates/pages/viagens_planos/lista.html",
+      "lines": 120,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/icone_documento.html",
+        "components/v32/cad_rail.html",
+        "pages/viagens_planos/_acoes_linha.html",
+        "pages/viagens_planos/_conteudo_linha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "94ff1c52d3bdac1ae2a018b5684f33202c5b34df",
+      "routes": [
+        "viagens_planos:lista"
+      ]
+    },
+    {
+      "template": "pages/viagens_planos/resultados.html",
+      "file": "templates/pages/viagens_planos/resultados.html",
+      "lines": 78,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "0cd72e14fd479551e0bd722e44a8de2d97c35fdc",
+      "routes": [
+        "viagens_planos:resultados"
+      ]
+    },
+    {
+      "template": "pages/viagens_prestacoes/_acoes_linha.html",
+      "file": "templates/pages/viagens_prestacoes/_acoes_linha.html",
+      "lines": 22,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "214ac07eb2fb80e26f12012950836a8f4e71e2ac",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_prestacoes/_importar_dialogo.html",
+      "file": "templates/pages/viagens_prestacoes/_importar_dialogo.html",
+      "lines": 61,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "6f57de85a17b920820a6c1788cc48be39f7c12f0",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_prestacoes/_motorista_campos.html",
+      "file": "templates/pages/viagens_prestacoes/_motorista_campos.html",
+      "lines": 51,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "f2c559db92d78cf7ab37ab9b4fa64b29308215ea",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_prestacoes/_oficio.html",
+      "file": "templates/pages/viagens_prestacoes/_oficio.html",
+      "lines": 109,
+      "extends": [],
+      "includes": [
+        "components/date_range.html",
+        "components/icon.html",
+        "components/input.html",
+        "pages/viagens_prestacoes/_acoes_linha.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "7a2696049656dd520a8e9201a69e05cb9564389f",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_prestacoes/base.html",
+      "file": "templates/pages/viagens_prestacoes/base.html",
+      "lines": 84,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "pc_acoes_topo",
+        "pc_avisos",
+        "pc_css",
+        "pc_js",
+        "pc_salvar_topo",
+        "pc_trilha",
+        "prestacao_conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "86b8ca279ca61084d1ef5e91de5bb298d9dc437e",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_prestacoes/carimbo_ajustar.html",
+      "file": "templates/pages/viagens_prestacoes/carimbo_ajustar.html",
+      "lines": 88,
+      "extends": [
+        "pages/viagens_prestacoes/base.html"
+      ],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [
+        "extra_css",
+        "extra_js",
+        "pc_salvar_topo",
+        "prestacao_conteudo"
+      ],
+      "static": [
+        "css/pdf-place.css",
+        "js/components/pdf-place.js",
+        "js/pages/prestacoes-carimbo.js",
+        "vendor/pdfjs/pdf.min.js",
+        "vendor/pdfjs/pdf.worker.min.js"
+      ],
+      "loads": [
+        "l10n",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "257bf20b95e0a6491c4dc683a2921eba45ed75e3",
+      "routes": [
+        "viagens_prestacoes:prestacao_carimbo_ajustar"
+      ]
+    },
+    {
+      "template": "pages/viagens_prestacoes/diario_bordo_form.html",
+      "file": "templates/pages/viagens_prestacoes/diario_bordo_form.html",
+      "lines": 170,
+      "extends": [
+        "pages/viagens_prestacoes/base.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "documentos/editor/_visualizador.html",
+        "pages/viagens_prestacoes/_motorista_campos.html"
+      ],
+      "blocks": [
+        "pc_avisos",
+        "pc_salvar_topo",
+        "prestacao_conteudo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags",
+        "l10n"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "fabb2bc671fbeeaff397590c99f1519c479b37e0",
+      "routes": [
+        "viagens_prestacoes:diario_servidor"
+      ]
+    },
+    {
+      "template": "pages/viagens_prestacoes/diario_motorista_form.html",
+      "file": "templates/pages/viagens_prestacoes/diario_motorista_form.html",
+      "lines": 25,
+      "extends": [
+        "pages/viagens_prestacoes/base.html"
+      ],
+      "includes": [
+        "pages/viagens_prestacoes/_motorista_campos.html"
+      ],
+      "blocks": [
+        "pc_salvar_topo",
+        "prestacao_conteudo"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "f66404bebfbf14d2f4f1a76aa25c31e5536b61d5",
+      "routes": [
+        "viagens_prestacoes:diario_servidor_motorista"
+      ]
+    },
+    {
+      "template": "pages/viagens_prestacoes/documentos_form.html",
+      "file": "templates/pages/viagens_prestacoes/documentos_form.html",
+      "lines": 197,
+      "extends": [
+        "pages/viagens_prestacoes/base.html"
+      ],
+      "includes": [
+        "components/date_range.html",
+        "components/icon.html",
+        "components/input.html",
+        "components/textarea.html",
+        "components/v32/copiaveis.html",
+        "components/v32/dialogo_baixar.html",
+        "components/v32/historico_alteracoes.html"
+      ],
+      "blocks": [
+        "pc_js",
+        "pc_salvar_topo",
+        "prestacao_conteudo"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos",
+        "l10n"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "fdc4139cc41faec219272ac8109b2642e8809b02",
+      "routes": [
+        "viagens_prestacoes:documentos_servidor"
+      ]
+    },
+    {
+      "template": "pages/viagens_prestacoes/importacao.html",
+      "file": "templates/pages/viagens_prestacoes/importacao.html",
+      "lines": 280,
+      "extends": [
+        "pages/viagens_prestacoes/base.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html"
+      ],
+      "blocks": [
+        "pc_js",
+        "pc_salvar_topo",
+        "pc_trilha",
+        "prestacao_conteudo"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "20c66cfdd05424ec85c387ebc29b1803f362ba4a",
+      "routes": [
+        "viagens_prestacoes:importacao_detalhe"
+      ]
+    },
+    {
+      "template": "pages/viagens_prestacoes/index.html",
+      "file": "templates/pages/viagens_prestacoes/index.html",
+      "lines": 100,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/cad_rail.html",
+        "components/v32/dialogo_assinado.html",
+        "components/v32/dialogo_baixar.html",
+        "pages/viagens_prestacoes/_importar_dialogo.html",
+        "pages/viagens_prestacoes/_oficio.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "11ab399b5e7a77b71d6c54435b93c5e90ef42c81",
+      "routes": [
+        "viagens_prestacoes:index"
+      ]
+    },
+    {
+      "template": "pages/viagens_prestacoes/pacote_revisar.html",
+      "file": "templates/pages/viagens_prestacoes/pacote_revisar.html",
+      "lines": 42,
+      "extends": [
+        "pages/viagens_prestacoes/base.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "pc_js",
+        "pc_salvar_topo",
+        "prestacao_conteudo"
+      ],
+      "static": [
+        "js/pages/prestacoes-pacote.js",
+        "vendor/pdfjs/pdf.min.js",
+        "vendor/pdfjs/pdf.worker.min.js"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "f11565bd4f8dd24484e317a2e30e2b17f2345b8b",
+      "routes": [
+        "viagens_prestacoes:pacote_revisar"
+      ]
+    },
+    {
+      "template": "pages/viagens_prestacoes/relatorio_tecnico_form.html",
+      "file": "templates/pages/viagens_prestacoes/relatorio_tecnico_form.html",
+      "lines": 100,
+      "extends": [
+        "pages/viagens_prestacoes/base.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html",
+        "documentos/editor/_visualizador.html"
+      ],
+      "blocks": [
+        "pc_salvar_topo",
+        "prestacao_conteudo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags",
+        "l10n"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "2b67c39d40be20d9d74f427305deb83cf5a0d367",
+      "routes": [
+        "viagens_prestacoes:rt_servidor"
+      ]
+    },
+    {
+      "template": "pages/viagens_roteiros/_acoes_editor.html",
+      "file": "templates/pages/viagens_roteiros/_acoes_editor.html",
+      "lines": 13,
+      "extends": [],
+      "includes": [
+        "components/v32/button.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "2c99c7bd16d11e60e42fa0155c0bc71b72413288",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_roteiros/_acoes_linha.html",
+      "file": "templates/pages/viagens_roteiros/_acoes_linha.html",
+      "lines": 24,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "09139e640afb0d959719db4ade72f38b268d5df7",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_roteiros/_como_calculado.html",
+      "file": "templates/pages/viagens_roteiros/_como_calculado.html",
+      "lines": 32,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "906c06037479bd3113fb1cdcec97cdf696c33049",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_roteiros/_conteudo_linha.html",
+      "file": "templates/pages/viagens_roteiros/_conteudo_linha.html",
+      "lines": 16,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "0f4bd7486ee2f9c9665e525d88e5d660796f4f1e",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_roteiros/_destino_row.html",
+      "file": "templates/pages/viagens_roteiros/_destino_row.html",
+      "lines": 38,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/select.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "827286d1e56830c8c6600aa2651514e41c952792",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_roteiros/_editor.html",
+      "file": "templates/pages/viagens_roteiros/_editor.html",
+      "lines": 355,
+      "extends": [],
+      "includes": [
+        "components/date_multi.html",
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/v32/historico_alteracoes.html",
+        "components/v32/lista_escolha.html",
+        "pages/viagens_roteiros/_acoes_editor.html",
+        "pages/viagens_roteiros/_como_calculado.html",
+        "pages/viagens_roteiros/_destino_row.html",
+        "pages/viagens_roteiros/_trecho_linha.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "bb8ab2b37dabc420f0343f05a8b1206f0fa41913",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_roteiros/_trecho_card.html",
+      "file": "templates/pages/viagens_roteiros/_trecho_card.html",
+      "lines": 91,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "8c7ad1a0807b30fe38b84dabd10d81e700181be5",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_roteiros/_trecho_linha.html",
+      "file": "templates/pages/viagens_roteiros/_trecho_linha.html",
+      "lines": 91,
+      "extends": [],
+      "includes": [
+        "components/input.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "59b19e99b35498bf30282b887f369bc74b1a097b",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_roteiros/form.html",
+      "file": "templates/pages/viagens_roteiros/form.html",
+      "lines": 90,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "pages/viagens_roteiros/_editor.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "cab2cbd7f39fbda64d75a58d7e31a2c5c9f3d3cb",
+      "routes": [
+        "viagens_roteiros:editar",
+        "viagens_roteiros:novo"
+      ]
+    },
+    {
+      "template": "pages/viagens_roteiros/lista.html",
+      "file": "templates/pages/viagens_roteiros/lista.html",
+      "lines": 125,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/cad_rail.html",
+        "pages/viagens_roteiros/_acoes_linha.html",
+        "pages/viagens_roteiros/_conteudo_linha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "819d895102d546409c54961af3eeea1402c48c5e",
+      "routes": [
+        "viagens_roteiros:lista"
+      ]
+    },
+    {
+      "template": "pages/viagens_termos/_acoes_fim.html",
+      "file": "templates/pages/viagens_termos/_acoes_fim.html",
+      "lines": 9,
+      "extends": [],
+      "includes": [
+        "components/v32/button.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "48745777c3a00c2b3f5aef0f86a3252d5b3edc08",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_termos/_acoes_linha.html",
+      "file": "templates/pages/viagens_termos/_acoes_linha.html",
+      "lines": 31,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "4ac45704f81b43b44434ab215bac6e0029709efc",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_termos/_conteudo_linha.html",
+      "file": "templates/pages/viagens_termos/_conteudo_linha.html",
+      "lines": 15,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "38ed7d1502a863c1e306266b0f626ab5eea09ef5",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_termos/_destino_linha.html",
+      "file": "templates/pages/viagens_termos/_destino_linha.html",
+      "lines": 43,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/select.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "aaaec0398f0eaaccbd3e6e2faa4818f31366cc26",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_termos/form.html",
+      "file": "templates/pages/viagens_termos/form.html",
+      "lines": 263,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/date_range.html",
+        "components/icon.html",
+        "components/v32/avisos_conflito.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/copiaveis.html",
+        "components/v32/dialogo_assinado.html",
+        "components/v32/lista_escolha.html",
+        "components/v32/multi_pick.html",
+        "documentos/editor/_visualizador.html",
+        "pages/viagens_termos/_acoes_fim.html",
+        "pages/viagens_termos/_destino_linha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "bdc16e647855b17831d87ce3de82c04ae47dc258",
+      "routes": [
+        "viagens_termos:editar",
+        "viagens_termos:novo"
+      ]
+    },
+    {
+      "template": "pages/viagens_termos/lista.html",
+      "file": "templates/pages/viagens_termos/lista.html",
+      "lines": 143,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/icone_documento.html",
+        "components/v32/cad_rail.html",
+        "components/v32/dialogo_assinado.html",
+        "components/v32/dialogo_baixar.html",
+        "pages/viagens_prestacoes/_importar_dialogo.html",
+        "pages/viagens_termos/_acoes_linha.html",
+        "pages/viagens_termos/_conteudo_linha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "85bf05e4b672d3eff17954ec296b27bdbde2444d",
+      "routes": [
+        "viagens_termos:lista"
+      ]
+    },
+    {
+      "template": "pages/viagens_termos/preview.html",
+      "file": "templates/pages/viagens_termos/preview.html",
+      "lines": 50,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "title"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "272ec65ca349159db38b683c6ec3b77d0eef5176",
+      "routes": [
+        "viagens_termos:preview",
+        "viagens_termos:preview_servidor"
+      ]
+    },
+    {
+      "template": "pages/viagens_viagem/_acoes_fim.html",
+      "file": "templates/pages/viagens_viagem/_acoes_fim.html",
+      "lines": 9,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/v32/button.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "e6e66e73d1a1b5429a8c61b48004c7e70dd404ec",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_acoes_linha.html",
+      "file": "templates/pages/viagens_viagem/_acoes_linha.html",
+      "lines": 50,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/select.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "4fd0d0df1079926a2b4af14a0d64de7200228581",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_coerencia.html",
+      "file": "templates/pages/viagens_viagem/_coerencia.html",
+      "lines": 24,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "43144a280fcbd19e10eb0aa900355bf9cd65726f",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_contador_servidores.html",
+      "file": "templates/pages/viagens_viagem/_contador_servidores.html",
+      "lines": 16,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "da8200b1d6902c6949f1023a026143cf5262e19e",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_conteudo_linha.html",
+      "file": "templates/pages/viagens_viagem/_conteudo_linha.html",
+      "lines": 13,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "6ca14c3667ea92b912a768309de6ee48f33e9c36",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_1.html",
+      "file": "templates/pages/viagens_viagem/_etapa_1.html",
+      "lines": 118,
+      "extends": [],
+      "includes": [
+        "components/date_range.html",
+        "components/icon.html",
+        "components/select.html",
+        "components/textarea.html",
+        "components/v32/lista_escolha.html",
+        "components/v32/multi_pick.html",
+        "pages/viagens_termos/_destino_linha.html",
+        "pages/viagens_viagem/_acoes_fim.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "a5959dff89e0fb5e8f0b14f553c0e3993736fb72",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_2.html",
+      "file": "templates/pages/viagens_viagem/_etapa_2.html",
+      "lines": 36,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "pages/viagens_roteiros/_acoes_linha.html",
+        "pages/viagens_roteiros/_conteudo_linha.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "d489fb746d3e9358548a01ac0a9880d6bde00e43",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_3.html",
+      "file": "templates/pages/viagens_viagem/_etapa_3.html",
+      "lines": 42,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/icone_documento.html",
+        "pages/viagens_oficios/_acoes_linha.html",
+        "pages/viagens_oficios/_linha.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "aacc27542b4b00595378e1441c3ea8f89782327b",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_4.html",
+      "file": "templates/pages/viagens_viagem/_etapa_4.html",
+      "lines": 160,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/icone_documento.html",
+        "pages/viagens_ordens/_acoes_linha.html",
+        "pages/viagens_ordens/_conteudo_linha.html",
+        "pages/viagens_planos/_acoes_linha.html",
+        "pages/viagens_planos/_conteudo_linha.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "5c7d0bc71e1182693e08a80a3bf811a72864c96a",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_5.html",
+      "file": "templates/pages/viagens_viagem/_etapa_5.html",
+      "lines": 37,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/icone_documento.html",
+        "pages/viagens_termos/_acoes_linha.html",
+        "pages/viagens_termos/_conteudo_linha.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "694d93d710380591bc38a0e90bb838ca83db61be",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_meta_da_solicitacao.html",
+      "file": "templates/pages/viagens_viagem/_meta_da_solicitacao.html",
+      "lines": 18,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "pages/viagens_viagem/_contador_servidores.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "ed31721286de1ac3bad3ea257a1be6315087842d",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/_prontidao.html",
+      "file": "templates/pages/viagens_viagem/_prontidao.html",
+      "lines": 33,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "c4783f27ead7d7c370dccb8479d7f52a8c1ab735",
+      "routes": []
+    },
+    {
+      "template": "pages/viagens_viagem/gerar_documentos.html",
+      "file": "templates/pages/viagens_viagem/gerar_documentos.html",
+      "lines": 145,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/button.html",
+        "components/v32/cartoes_escolha.html",
+        "components/v32/lista_escolha.html",
+        "pages/viagens_viagem/_contador_servidores.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "a9981d8ee58f6cb6a7851cefcd6f0795458db48c",
+      "routes": [
+        "viagens_viagem:gerar_documentos"
+      ]
+    },
+    {
+      "template": "pages/viagens_viagem/lista.html",
+      "file": "templates/pages/viagens_viagem/lista.html",
+      "lines": 120,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/cad_rail.html",
+        "pages/viagens_viagem/_acoes_linha.html",
+        "pages/viagens_viagem/_conteudo_linha.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "35c74c20de218c8e4e1242e08ae928adbb348aa9",
+      "routes": [
+        "viagens_viagem:lista"
+      ]
+    },
+    {
+      "template": "pages/viagens_viagem/painel.html",
+      "file": "templates/pages/viagens_viagem/painel.html",
+      "lines": 131,
+      "extends": [
+        "layouts/app_shell_v32.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/avisos_conflito.html",
+        "components/v32/breadcrumb.html",
+        "components/v32/button.html",
+        "components/v32/dialogo_assinado.html",
+        "components/v32/dialogo_baixar.html",
+        "pages/viagens_viagem/_coerencia.html",
+        "pages/viagens_viagem/_etapa_1.html",
+        "pages/viagens_viagem/_etapa_2.html",
+        "pages/viagens_viagem/_etapa_3.html",
+        "pages/viagens_viagem/_etapa_4.html",
+        "pages/viagens_viagem/_etapa_5.html",
+        "pages/viagens_viagem/_meta_da_solicitacao.html",
+        "pages/viagens_viagem/_prontidao.html"
+      ],
+      "blocks": [
+        "conteudo",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "fd0b7a0f8f76ef7a62685c74b6bcdcf5ea6b4711",
+      "routes": [
+        "viagens_viagem:etapa"
+      ]
+    }
+  ],
+  "layouts": [
+    {
+      "template": "layouts/app_shell_v32.html",
+      "file": "templates/layouts/app_shell_v32.html",
+      "lines": 119,
+      "extends": [
+        "layouts/base.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "components/v32/dialogo_assinado.html"
+      ],
+      "blocks": [
+        "body",
+        "conteudo",
+        "css_principal",
+        "extra_js"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "9b0a66e8cdc68f167a97db365c6aa75bdc1ac2f7"
+    },
+    {
+      "template": "layouts/auth.html",
+      "file": "templates/layouts/auth.html",
+      "lines": 17,
+      "extends": [
+        "layouts/base.html"
+      ],
+      "includes": [
+        "components/top_header.html"
+      ],
+      "blocks": [
+        "body",
+        "conteudo"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "50ca34dca4e5cded8da9eec4b0371542eb8a0437"
+    },
+    {
+      "template": "layouts/base.html",
+      "file": "templates/layouts/base.html",
+      "lines": 17,
+      "extends": [],
+      "includes": [],
+      "blocks": [
+        "body",
+        "body_class",
+        "css_principal",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [
+        "icons/favicon.svg"
+      ],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "9c8f1f1798f26b1d264a745e7bab99681fff7b96"
+    }
+  ],
+  "other_templates": [
+    {
+      "template": "agent_lab/_head.html",
+      "file": "agent_lab/templates/agent_lab/_head.html",
+      "lines": 23,
+      "extends": [],
+      "includes": [],
+      "blocks": [
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "687095463e941cec6fc82d07d553f77c84a42aa8"
+    },
+    {
+      "template": "agent_lab/index.html",
+      "file": "agent_lab/templates/agent_lab/index.html",
+      "lines": 30,
+      "extends": [],
+      "includes": [
+        "agent_lab/_head.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "d1dbd973623d8bf4f27209672c997e8598be9b3e"
+    },
+    {
+      "template": "agent_lab/specimen.html",
+      "file": "agent_lab/templates/agent_lab/specimen.html",
+      "lines": 9,
+      "extends": [],
+      "includes": [
+        "agent_lab/_head.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 1,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "dc607e58b3b9cc46a9275ec92ad5f8aaff25126a"
+    },
+    {
+      "template": "coffee_break/documentos/_base.html",
+      "file": "templates/coffee_break/documentos/_base.html",
+      "lines": 99,
+      "extends": [],
+      "includes": [],
+      "blocks": [
+        "cabecalho_linhas",
+        "corpo",
+        "estilo",
+        "geometria",
+        "pagina_topo",
+        "rodape_linhas",
+        "titulo",
+        "topo"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 1,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "779400df4688bdb8544193e9e7ce7cf7925e8c52"
+    },
+    {
+      "template": "coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "file": "templates/coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "lines": 74,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "30f1f2921489a37a34c28591ea2b0cd53afa28e8"
+    },
+    {
+      "template": "coffee_break/documentos/certifico.html",
+      "file": "templates/coffee_break/documentos/certifico.html",
+      "lines": 56,
+      "extends": [
+        "coffee_break/documentos/_base.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "cabecalho_linhas",
+        "corpo",
+        "estilo",
+        "geometria",
+        "pagina_topo",
+        "rodape_linhas",
+        "titulo",
+        "topo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "d7de237049927f522733619bb8f0e256f89b005e"
+    },
+    {
+      "template": "coffee_break/documentos/oficio.html",
+      "file": "templates/coffee_break/documentos/oficio.html",
+      "lines": 90,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "84fa51f0d115c373a9576b8df4408e1651dc874b"
+    },
+    {
+      "template": "coffee_break/documentos/ordem_servico.html",
+      "file": "templates/coffee_break/documentos/ordem_servico.html",
+      "lines": 68,
+      "extends": [
+        "coffee_break/documentos/_base.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "cabecalho_linhas",
+        "corpo",
+        "estilo",
+        "geometria",
+        "pagina_topo",
+        "rodape_linhas",
+        "titulo",
+        "topo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "64ffb56c56cc87dde123d8f0a094beb7715c1595"
+    },
+    {
+      "template": "coffee_break/documentos/relatorio_contrato.html",
+      "file": "templates/coffee_break/documentos/relatorio_contrato.html",
+      "lines": 31,
+      "extends": [],
+      "includes": [
+        "coffee_break/documentos/_relatorio_contrato_corpo.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "531a32e05db7a1ea87769cc0cf3af8365f7c59b7"
+    },
+    {
+      "template": "documentos/editor/_assinatura.html",
+      "file": "templates/documentos/editor/_assinatura.html",
+      "lines": 10,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "331882036c6245eaada099f701db52f471760e4d"
+    },
+    {
+      "template": "documentos/editor/_barra_completo.html",
+      "file": "templates/documentos/editor/_barra_completo.html",
+      "lines": 48,
+      "extends": [],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "f5e05743bf7b1fd838ea7db73f679e69c3e4b8d7"
+    },
+    {
+      "template": "documentos/editor/_recursos.html",
+      "file": "templates/documentos/editor/_recursos.html",
+      "lines": 11,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "c88478e7ac43918afd23e0739506f4e6eaf37a30"
+    },
+    {
+      "template": "documentos/editor/_visualizador.html",
+      "file": "templates/documentos/editor/_visualizador.html",
+      "lines": 24,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "documentos/editor/_recursos.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "a3a4e6696bbbcb2f8e08ce0cbc98b94c00c92a22"
+    },
+    {
+      "template": "documentos/editor/bloco.html",
+      "file": "templates/documentos/editor/bloco.html",
+      "lines": 28,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/textarea.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "85d39febe4a28b5d8e583aa5857caeeb78ca19dc"
+    },
+    {
+      "template": "documentos/editor/campo.html",
+      "file": "templates/documentos/editor/campo.html",
+      "lines": 55,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "components/input.html",
+        "components/select.html",
+        "components/textarea.html",
+        "components/v32/multi_pick.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "1b4a3ab2688d027e1c4e95150ee7adec1a187e5f"
+    },
+    {
+      "template": "documentos/editor/completo.html",
+      "file": "templates/documentos/editor/completo.html",
+      "lines": 114,
+      "extends": [
+        "layouts/base.html"
+      ],
+      "includes": [
+        "components/icon.html",
+        "documentos/editor/_assinatura.html",
+        "documentos/editor/_barra_completo.html"
+      ],
+      "blocks": [
+        "body",
+        "body_class",
+        "css_principal",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "8cebc41c26590d70a6da5e81c45d47d8e72188a9"
+    },
+    {
+      "template": "documentos/editor/embutido.html",
+      "file": "templates/documentos/editor/embutido.html",
+      "lines": 174,
+      "extends": [],
+      "includes": [
+        "components/icon.html",
+        "documentos/editor/_assinatura.html",
+        "documentos/editor/_barra_completo.html"
+      ],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": true,
+      "has_empty_state": true,
+      "sha1_normalized": "851fe8eff65c2b74f76cd60531498f458637e1f4"
+    },
+    {
+      "template": "documentos/editor/modelo.html",
+      "file": "templates/documentos/editor/modelo.html",
+      "lines": 133,
+      "extends": [
+        "layouts/base.html"
+      ],
+      "includes": [
+        "components/icon.html"
+      ],
+      "blocks": [
+        "body",
+        "body_class",
+        "css_principal",
+        "extra_css",
+        "extra_js",
+        "title"
+      ],
+      "static": [],
+      "loads": [
+        "estaticos"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": true,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "32b2110f2f0f49c1229535f4228f67af11bd5cfa"
+    },
+    {
+      "template": "documentos/pdf/_lacuna.html",
+      "file": "templates/documentos/pdf/_lacuna.html",
+      "lines": 4,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "aea464093e3569f12bd713b70f87a6b9df107695"
+    },
+    {
+      "template": "documentos/pdf/_plano_lista.html",
+      "file": "templates/documentos/pdf/_plano_lista.html",
+      "lines": 19,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "d56a34bdf0ba1526536992804c6e17f96f9f0342"
+    },
+    {
+      "template": "documentos/pdf/_rodape_ascom.html",
+      "file": "templates/documentos/pdf/_rodape_ascom.html",
+      "lines": 2,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "d8212d57a375be7dd117cf50192905d1d7877cd4"
+    },
+    {
+      "template": "documentos/pdf/base_institucional.html",
+      "file": "templates/documentos/pdf/base_institucional.html",
+      "lines": 64,
+      "extends": [],
+      "includes": [],
+      "blocks": [
+        "classe",
+        "corpo",
+        "css",
+        "rodape",
+        "rodape_destinatario",
+        "rodape_topo",
+        "titulo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags",
+        "static"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "74012bb39627bfb5ea7c8b1e2e28c4d9405f3ab0"
+    },
+    {
+      "template": "documentos/pdf/coffee_break_certificado.html",
+      "file": "templates/documentos/pdf/coffee_break_certificado.html",
+      "lines": 72,
+      "extends": [
+        "documentos/pdf/base_institucional.html"
+      ],
+      "includes": [
+        "documentos/pdf/_rodape_ascom.html"
+      ],
+      "blocks": [
+        "classe",
+        "corpo",
+        "rodape",
+        "titulo"
+      ],
+      "static": [],
+      "loads": [],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "77c23a570baf0c3fad334328c5ce2dcc2caf9ea6"
+    },
+    {
+      "template": "documentos/pdf/coffee_break_certifico.html",
+      "file": "templates/documentos/pdf/coffee_break_certifico.html",
+      "lines": 49,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "cb416530bb65ced2fcb932cad0342a7c2f0b851b"
+    },
+    {
+      "template": "documentos/pdf/coffee_break_oficio.html",
+      "file": "templates/documentos/pdf/coffee_break_oficio.html",
+      "lines": 61,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "e2d9bcb41b15c1a4833b0e4b1e3b1b4bf613305f"
+    },
+    {
+      "template": "documentos/pdf/coffee_break_ordem_servico.html",
+      "file": "templates/documentos/pdf/coffee_break_ordem_servico.html",
+      "lines": 70,
+      "extends": [],
+      "includes": [],
+      "blocks": [],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "d85cda0556ea2af85333ccb73f5af422e07e48d6"
+    },
+    {
+      "template": "documentos/pdf/diario_bordo.html",
+      "file": "templates/documentos/pdf/diario_bordo.html",
+      "lines": 67,
+      "extends": [
+        "documentos/pdf/base_institucional.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "classe",
+        "corpo",
+        "rodape",
+        "titulo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "7fdfcaf18747a2462615baf6a1df42f66fe19f32"
+    },
+    {
+      "template": "documentos/pdf/justificativa.html",
+      "file": "templates/documentos/pdf/justificativa.html",
+      "lines": 33,
+      "extends": [
+        "documentos/pdf/base_institucional.html"
+      ],
+      "includes": [
+        "documentos/pdf/_rodape_ascom.html"
+      ],
+      "blocks": [
+        "classe",
+        "corpo",
+        "rodape",
+        "titulo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "ca0be74c3b30c03d58f75bd717291561b1723b73"
+    },
+    {
+      "template": "documentos/pdf/oficio.html",
+      "file": "templates/documentos/pdf/oficio.html",
+      "lines": 129,
+      "extends": [
+        "documentos/pdf/base_institucional.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "classe",
+        "corpo",
+        "rodape",
+        "rodape_topo",
+        "titulo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "427a828b61d24f00fda75df382c001e947e4b38e"
+    },
+    {
+      "template": "documentos/pdf/ordem_servico.html",
+      "file": "templates/documentos/pdf/ordem_servico.html",
+      "lines": 52,
+      "extends": [
+        "documentos/pdf/base_institucional.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "classe",
+        "corpo",
+        "rodape",
+        "titulo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "5c6d8c244e462fc265fda3050d91a411871cec50"
+    },
+    {
+      "template": "documentos/pdf/plano_trabalho.html",
+      "file": "templates/documentos/pdf/plano_trabalho.html",
+      "lines": 87,
+      "extends": [
+        "documentos/pdf/base_institucional.html"
+      ],
+      "includes": [
+        "documentos/pdf/_plano_lista.html"
+      ],
+      "blocks": [
+        "classe",
+        "corpo",
+        "rodape",
+        "titulo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": true,
+      "sha1_normalized": "f2ff5b52e7e44c17b3e80ae6f2721bb56d9e6bab"
+    },
+    {
+      "template": "documentos/pdf/relatorio_tecnico.html",
+      "file": "templates/documentos/pdf/relatorio_tecnico.html",
+      "lines": 55,
+      "extends": [
+        "documentos/pdf/base_institucional.html"
+      ],
+      "includes": [],
+      "blocks": [
+        "classe",
+        "corpo",
+        "rodape",
+        "titulo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": true,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "8839ea3940fb54a01c5986398c368aed4f90afd9"
+    },
+    {
+      "template": "documentos/pdf/termo_autorizacao.html",
+      "file": "templates/documentos/pdf/termo_autorizacao.html",
+      "lines": 55,
+      "extends": [
+        "documentos/pdf/base_institucional.html"
+      ],
+      "includes": [
+        "documentos/pdf/_lacuna.html",
+        "documentos/pdf/_rodape_ascom.html"
+      ],
+      "blocks": [
+        "classe",
+        "corpo",
+        "rodape",
+        "titulo"
+      ],
+      "static": [],
+      "loads": [
+        "documento_tags"
+      ],
+      "partials": [],
+      "inline_style_attrs": 0,
+      "inline_script_blocks": 0,
+      "has_table": false,
+      "has_form": false,
+      "has_dialog": false,
+      "has_empty_state": false,
+      "sha1_normalized": "5748f8320f7b120577ef6dd80e91762a3a95aecc"
+    }
+  ]
+}

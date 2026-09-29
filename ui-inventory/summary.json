@@ -1,0 +1,13 @@
+{
+  "routes": 601,
+  "pages": 201,
+  "layouts": 3,
+  "template_components": 40,
+  "tables": 53,
+  "dialogs": 34,
+  "forms": 62,
+  "entities": 109,
+  "tokens": 207,
+  "css_files": 18,
+  "assets": 101
+}

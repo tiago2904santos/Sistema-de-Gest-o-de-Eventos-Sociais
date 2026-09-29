@@ -1,0 +1,8 @@
+{% load estaticos %}
+{% include "agent_lab/_head.html" %}
+<main class="lab-solo" data-specimen="{{ spec.id }}" data-state="{{ spec.state }}" data-interact="{{ spec.interact }}">
+  <h1 class="sr-only">Espécime {{ spec.id }}</h1>
+  {% if erro %}<div class="lab-erro" data-error>{{ erro }}</div>{% else %}<div id="alvo" class="lab-cel__alvo" style="display:inline-block;min-width:280px;max-width:100%">{{ html|safe }}</div>{% endif %}
+</main>
+<script src="{% estatico 'js/app.js' %}" defer></script>
+</body></html>

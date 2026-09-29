@@ -35,3 +35,12 @@ Thumbs.db
 auditoria-visual/
 auditoria-visual.zip
 /prints/
+
+# Laboratório do agente
+.lab/
+node_modules/
+reports/
+!reports/README.md
+tests/visual/diffs/*
+!tests/visual/diffs/.gitkeep
+test-results/

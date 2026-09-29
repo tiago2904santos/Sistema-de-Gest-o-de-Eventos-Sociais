@@ -1,0 +1,206 @@
+{
+  "known": [
+    {
+      "name": "eProtocolo (PR)",
+      "settings": "EPROTOCOLO",
+      "default_mode": "mock",
+      "code": [
+        "core/leitura/eprotocolo.py",
+        "viagens_oficios/protocolo_services.py"
+      ]
+    },
+    {
+      "name": "OpenRouteService",
+      "settings": "OPENROUTESERVICE_API_KEY",
+      "default_mode": "desligado sem chave"
+    },
+    {
+      "name": "OpenStreetMap/Nominatim (geocodificação)",
+      "settings": "GEOCODIFICAR_SOB_DEMANDA",
+      "default_mode": "ligado fora da suíte"
+    },
+    {
+      "name": "WhatsApp Cloud API",
+      "settings": "WHATSAPP_*",
+      "default_mode": "desligado"
+    },
+    {
+      "name": "Anthropic API (assistente)",
+      "settings": "ANTHROPIC_API_KEY",
+      "default_mode": "determinístico sem chave"
+    },
+    {
+      "name": "SMTP",
+      "settings": "EMAIL_HOST",
+      "default_mode": "console"
+    },
+    {
+      "name": "Banco legado GV (somente leitura)",
+      "settings": "LEGADO_DB_*",
+      "default_mode": "desligado"
+    },
+    {
+      "name": "Word COM / LibreOffice / WeasyPrint (motores PDF)",
+      "settings": "DOCUMENTOS_*",
+      "default_mode": "auto"
+    }
+  ],
+  "env_vars_in_settings": [
+    "AGENT_LAB",
+    "COFFEE_LINK_FORNECEDOR_DIAS",
+    "DEFAULT_FROM_EMAIL",
+    "DJANGO_ALLOWED_HOSTS",
+    "DJANGO_DEBUG",
+    "DJANGO_SECRET_KEY",
+    "DJANGO_SECURE_HSTS_SECONDS",
+    "DJANGO_SECURE_SSL_REDIRECT",
+    "DJANGO_TRUST_PROXY_HTTPS",
+    "DOCUMENTOS_DEFAULT_PDF_ENGINE",
+    "DOCUMENTOS_LIBREOFFICE_BINARY",
+    "DOCUMENTOS_PDF_AUTO_FALLBACK",
+    "DOCUMENTOS_PDF_HTML_FALLBACK_DOCX",
+    "DOCUMENTOS_SIMPLE_PDF_FALLBACK",
+    "EMAIL_HOST",
+    "EMAIL_HOST_PASSWORD",
+    "EMAIL_HOST_USER",
+    "EMAIL_PORT",
+    "EMAIL_TIMEOUT",
+    "EMAIL_USE_SSL",
+    "EMAIL_USE_TLS",
+    "EPROTOCOLO_AMBIENTE",
+    "EPROTOCOLO_BASE_URL",
+    "EPROTOCOLO_CLIENT_ID",
+    "EPROTOCOLO_CLIENT_SECRET",
+    "EPROTOCOLO_COD_ASSUNTO_VIAGEM",
+    "EPROTOCOLO_COD_ESPECIE_OFICIO",
+    "EPROTOCOLO_COD_LOCAL_DESTINO_PADRAO",
+    "EPROTOCOLO_COD_LOCAL_ORIGEM_PADRAO",
+    "EPROTOCOLO_COD_ORGAO_PADRAO",
+    "EPROTOCOLO_COD_PALAVRA_CHAVE_VIAGEM",
+    "EPROTOCOLO_CONSUMER_ID",
+    "EPROTOCOLO_CPF_USUARIO_SISTEMA",
+    "EPROTOCOLO_NOME_ORGAO_PADRAO",
+    "EPROTOCOLO_TIMEOUT",
+    "EPROTOCOLO_TOKEN_URL",
+    "GEOCODIFICAR_SOB_DEMANDA",
+    "LEGADO_DB_HOST",
+    "LEGADO_DB_NAME",
+    "LEGADO_DB_PASSWORD",
+    "LEGADO_DB_PORT",
+    "LEGADO_DB_USER",
+    "MEDIA_ROOT",
+    "OPENROUTESERVICE_API_KEY",
+    "POSTGRES_DB",
+    "POSTGRES_HOST",
+    "POSTGRES_PASSWORD",
+    "POSTGRES_PORT",
+    "POSTGRES_USER",
+    "ROTINAS_DIARIAS_AUTOMATICAS",
+    "ROUTE_REQUEST_TIMEOUT_SECONDS",
+    "SQLITE_PATH"
+  ],
+  "env_vars_in_env_example": [
+    "ANTHROPIC_API_KEY",
+    "ASSISTENTE_LLM",
+    "ASSISTENTE_LLM_MODELO",
+    "DEFAULT_FROM_EMAIL",
+    "DJANGO_ALLOWED_HOSTS",
+    "DJANGO_DEBUG",
+    "DJANGO_SECRET_KEY",
+    "DJANGO_SECURE_HSTS_SECONDS",
+    "DJANGO_SECURE_SSL_REDIRECT",
+    "DJANGO_TRUST_PROXY_HTTPS",
+    "EMAIL_HOST",
+    "EMAIL_HOST_PASSWORD",
+    "EMAIL_HOST_USER",
+    "EMAIL_PORT",
+    "EMAIL_TIMEOUT",
+    "EMAIL_USE_TLS",
+    "EPROTOCOLO_AMBIENTE",
+    "EPROTOCOLO_AUTO_PROTOCOLO_OFICIO",
+    "EPROTOCOLO_BASE_URL",
+    "EPROTOCOLO_CLIENT_ID",
+    "EPROTOCOLO_CLIENT_SECRET",
+    "EPROTOCOLO_COD_ASSUNTO_VIAGEM",
+    "EPROTOCOLO_COD_ESPECIE_OFICIO",
+    "EPROTOCOLO_COD_LOCAL_DESTINO_PADRAO",
+    "EPROTOCOLO_COD_LOCAL_ORIGEM_PADRAO",
+    "EPROTOCOLO_COD_ORGAO_PADRAO",
+    "EPROTOCOLO_COD_PALAVRA_CHAVE_VIAGEM",
+    "EPROTOCOLO_CONSUMER_ID",
+    "EPROTOCOLO_CPF_USUARIO_SISTEMA",
+    "EPROTOCOLO_NOME_ORGAO_PADRAO",
+    "EPROTOCOLO_REAL_READONLY",
+    "EPROTOCOLO_TIMEOUT",
+    "EPROTOCOLO_TOKEN_URL",
+    "EPROTOCOLO_VERIFY_SSL",
+    "OPENROUTESERVICE_API_KEY",
+    "POSTGRES_DB",
+    "POSTGRES_HOST",
+    "POSTGRES_PASSWORD",
+    "POSTGRES_PORT",
+    "POSTGRES_USER",
+    "ROUTE_REQUEST_TIMEOUT_SECONDS",
+    "WHATSAPP_APP_SECRET",
+    "WHATSAPP_PHONE_NUMBER_ID",
+    "WHATSAPP_TOKEN",
+    "WHATSAPP_VERIFY_TOKEN"
+  ],
+  "outbound_hosts": {
+    "...": [
+      "core/leitura/mensagem.py"
+    ],
+    "api.openrouteservice.org": [
+      "viagens_roteiros/services/rota.py"
+    ],
+    "cdwfazenda.paas.pr.gov.br": [
+      "coffee_break/certidoes.py"
+    ],
+    "cndt-certidao.tst.jus.br": [
+      "coffee_break/certidoes.py"
+    ],
+    "consulta-crf.caixa.gov.br": [
+      "coffee_break/certidoes.py"
+    ],
+    "docs.djangoproject.com": [
+      "config/asgi.py",
+      "config/wsgi.py"
+    ],
+    "nominatim.openstreetmap.org": [
+      "viagens_cadastros/geocodificacao.py"
+    ],
+    "servicodados.ibge.gov.br": [
+      "cadastros/management/commands/importar_localidades_ibge.py"
+    ],
+    "servicos.receitafederal.gov.br": [
+      "coffee_break/certidoes.py"
+    ],
+    "sitemalicioso": [
+      "core/retorno.py"
+    ],
+    "viacep.com.br": [
+      "viagens_cadastros/cep.py"
+    ],
+    "wa.me": [
+      "demandas_eventos/services.py",
+      "viagens_prestacoes/campo_services.py",
+      "viagens_prestacoes/cartoes.py"
+    ],
+    "www.ibge.gov.br": [
+      "cadastros/management/commands/importar_municipios.py"
+    ]
+  },
+  "http_clients": {
+    "smtplib": [
+      "coffee_break/views.py"
+    ],
+    "urllib.request": [
+      "cadastros/management/commands/importar_localidades_ibge.py",
+      "integracoes/eprotocolo/client.py",
+      "scripts/agent/lab.py",
+      "viagens_cadastros/cep.py",
+      "viagens_cadastros/geocodificacao.py",
+      "viagens_roteiros/services/rota.py"
+    ]
+  }
+}

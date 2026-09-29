@@ -1,0 +1,619 @@
+{
+  "count": 101,
+  "total_bytes_by_kind": {
+    "css": 568733,
+    "fonts": 3172712,
+    "icons": 237050,
+    "img": 197960,
+    "js": 667744,
+    "vendor": 1921224
+  },
+  "assets": [
+    {
+      "file": "static/css/agenda-extras.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 7763
+    },
+    {
+      "file": "static/css/agenda-google.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 26130
+    },
+    {
+      "file": "static/css/agenda.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 12501
+    },
+    {
+      "file": "static/css/design-system.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 124507
+    },
+    {
+      "file": "static/css/ds-v32-bridge.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 251589
+    },
+    {
+      "file": "static/css/ds-v32.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 83244
+    },
+    {
+      "file": "static/css/pages/diario-campo.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 3683
+    },
+    {
+      "file": "static/css/pages/documento-completo.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 2125
+    },
+    {
+      "file": "static/css/pages/documento-modelo.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 2406
+    },
+    {
+      "file": "static/css/pages/viagens-configuracoes.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 983
+    },
+    {
+      "file": "static/css/pages/viagens-documento.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 13151
+    },
+    {
+      "file": "static/css/pdf-place.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 3444
+    },
+    {
+      "file": "static/css/viagens-cadastros.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 12264
+    },
+    {
+      "file": "static/css/viagens-documentos.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 843
+    },
+    {
+      "file": "static/css/viagens-ordens.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 4652
+    },
+    {
+      "file": "static/css/viagens-planos.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 11510
+    },
+    {
+      "file": "static/css/viagens-prestacoes.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 402
+    },
+    {
+      "file": "static/css/viagens-viagem.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 7536
+    },
+    {
+      "file": "static/fonts/LICENSE-Liberation.txt",
+      "kind": "fonts",
+      "vendor": false,
+      "bytes": 5756
+    },
+    {
+      "file": "static/fonts/LiberationSans-Bold.ttf",
+      "kind": "fonts",
+      "vendor": false,
+      "bytes": 414568
+    },
+    {
+      "file": "static/fonts/LiberationSans-BoldItalic.ttf",
+      "kind": "fonts",
+      "vendor": false,
+      "bytes": 409108
+    },
+    {
+      "file": "static/fonts/LiberationSans-Italic.ttf",
+      "kind": "fonts",
+      "vendor": false,
+      "bytes": 415920
+    },
+    {
+      "file": "static/fonts/LiberationSans-Regular.ttf",
+      "kind": "fonts",
+      "vendor": false,
+      "bytes": 410820
+    },
+    {
+      "file": "static/fonts/LiberationSerif-Bold.ttf",
+      "kind": "fonts",
+      "vendor": false,
+      "bytes": 370196
+    },
+    {
+      "file": "static/fonts/LiberationSerif-BoldItalic.ttf",
+      "kind": "fonts",
+      "vendor": false,
+      "bytes": 376892
+    },
+    {
+      "file": "static/fonts/LiberationSerif-Italic.ttf",
+      "kind": "fonts",
+      "vendor": false,
+      "bytes": 375760
+    },
+    {
+      "file": "static/fonts/LiberationSerif-Regular.ttf",
+      "kind": "fonts",
+      "vendor": false,
+      "bytes": 393692
+    },
+    {
+      "file": "static/icons/.gitkeep",
+      "kind": "icons",
+      "vendor": false,
+      "bytes": 0
+    },
+    {
+      "file": "static/icons/favicon.svg",
+      "kind": "icons",
+      "vendor": false,
+      "bytes": 237050
+    },
+    {
+      "file": "static/img/.gitkeep",
+      "kind": "img",
+      "vendor": false,
+      "bytes": 0
+    },
+    {
+      "file": "static/img/brasao-pcpr-timbre.png",
+      "kind": "img",
+      "vendor": false,
+      "bytes": 160726
+    },
+    {
+      "file": "static/img/brasao-pcpr.png",
+      "kind": "img",
+      "vendor": false,
+      "bytes": 28146
+    },
+    {
+      "file": "static/img/marca-pcpr-timbre.png",
+      "kind": "img",
+      "vendor": false,
+      "bytes": 7132
+    },
+    {
+      "file": "static/img/marca-pcpr.png",
+      "kind": "img",
+      "vendor": false,
+      "bytes": 1956
+    },
+    {
+      "file": "static/js/agenda-extras.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 7540
+    },
+    {
+      "file": "static/js/agenda.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 28895
+    },
+    {
+      "file": "static/js/anexar-assinado.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 10541
+    },
+    {
+      "file": "static/js/app.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 101964
+    },
+    {
+      "file": "static/js/autosave-rascunho.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 5441
+    },
+    {
+      "file": "static/js/baixar-documentos.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 9397
+    },
+    {
+      "file": "static/js/buscar-endereco.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 9773
+    },
+    {
+      "file": "static/js/coffee-break-documentos.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 5453
+    },
+    {
+      "file": "static/js/coffee-break-importar.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 5941
+    },
+    {
+      "file": "static/js/coffee-break-lote.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 5187
+    },
+    {
+      "file": "static/js/coffee-break-pdf.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 2820
+    },
+    {
+      "file": "static/js/coffee-break-protocolo.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 1072
+    },
+    {
+      "file": "static/js/coffee-break-vincular.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 2569
+    },
+    {
+      "file": "static/js/components/copiar.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 2274
+    },
+    {
+      "file": "static/js/components/pdf-place.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 10044
+    },
+    {
+      "file": "static/js/conflitos.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 3726
+    },
+    {
+      "file": "static/js/destinos-arraste.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 5581
+    },
+    {
+      "file": "static/js/diario-campo.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 16566
+    },
+    {
+      "file": "static/js/documento-completo.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 10251
+    },
+    {
+      "file": "static/js/documento-editor.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 52134
+    },
+    {
+      "file": "static/js/documento-embutido.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 8083
+    },
+    {
+      "file": "static/js/documento-modelo.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 16360
+    },
+    {
+      "file": "static/js/ds-v32.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 20373
+    },
+    {
+      "file": "static/js/lista-escolha.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 3135
+    },
+    {
+      "file": "static/js/multi-pick.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 7801
+    },
+    {
+      "file": "static/js/nome-sugerido.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 4798
+    },
+    {
+      "file": "static/js/pages/prestacoes-carimbo.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 6307
+    },
+    {
+      "file": "static/js/pages/prestacoes-pacote.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 6947
+    },
+    {
+      "file": "static/js/pages/viagens-configuracoes.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 3345
+    },
+    {
+      "file": "static/js/palestras-form.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 9473
+    },
+    {
+      "file": "static/js/preencher-por-email.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 36096
+    },
+    {
+      "file": "static/js/prestacoes-importacao.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 8542
+    },
+    {
+      "file": "static/js/prestacoes-importar.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 12294
+    },
+    {
+      "file": "static/js/roteiro-editor.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 73489
+    },
+    {
+      "file": "static/js/solicitacoes-form.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 7569
+    },
+    {
+      "file": "static/js/sugestao-solicitante.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 4579
+    },
+    {
+      "file": "static/js/triagem-email.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 11789
+    },
+    {
+      "file": "static/js/trilho.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 3596
+    },
+    {
+      "file": "static/js/viagens-cadastros.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 3983
+    },
+    {
+      "file": "static/js/viagens-catalogos.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 740
+    },
+    {
+      "file": "static/js/viagens-dialogos-cadastros.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 1064
+    },
+    {
+      "file": "static/js/viagens-documento.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 11184
+    },
+    {
+      "file": "static/js/viagens-filtros-cadastros.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 1075
+    },
+    {
+      "file": "static/js/viagens-gerar-documentos.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 4694
+    },
+    {
+      "file": "static/js/viagens-justificativas.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 879
+    },
+    {
+      "file": "static/js/viagens-modal-select.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 2042
+    },
+    {
+      "file": "static/js/viagens-oficios.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 24802
+    },
+    {
+      "file": "static/js/viagens-ordens.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 17940
+    },
+    {
+      "file": "static/js/viagens-planos.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 19696
+    },
+    {
+      "file": "static/js/viagens-prestacoes.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 22103
+    },
+    {
+      "file": "static/js/viagens-termos.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 9313
+    },
+    {
+      "file": "static/js/viagens-viagem.js",
+      "kind": "js",
+      "vendor": false,
+      "bytes": 6484
+    },
+    {
+      "file": "static/vendor/fullcalendar/index.global.min.js",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 282117
+    },
+    {
+      "file": "static/vendor/fullcalendar/pt-br.global.min.js",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 810
+    },
+    {
+      "file": "static/vendor/google-sans/OFL.txt",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 4488
+    },
+    {
+      "file": "static/vendor/google-sans/google-sans-latin-ext.woff2",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 21284
+    },
+    {
+      "file": "static/vendor/google-sans/google-sans-latin.woff2",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 35968
+    },
+    {
+      "file": "static/vendor/google-sans/google-sans.css",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 859
+    },
+    {
+      "file": "static/vendor/leaflet/images/layers-2x.png",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 1259
+    },
+    {
+      "file": "static/vendor/leaflet/images/layers.png",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 696
+    },
+    {
+      "file": "static/vendor/leaflet/images/marker-icon-2x.png",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 2464
+    },
+    {
+      "file": "static/vendor/leaflet/images/marker-icon.png",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 1466
+    },
+    {
+      "file": "static/vendor/leaflet/images/marker-shadow.png",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 618
+    },
+    {
+      "file": "static/vendor/leaflet/leaflet.css",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 14145
+    },
+    {
+      "file": "static/vendor/leaflet/leaflet.js",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 147834
+    },
+    {
+      "file": "static/vendor/pdfjs/pdf.min.js",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 320004
+    },
+    {
+      "file": "static/vendor/pdfjs/pdf.worker.min.js",
+      "kind": "vendor",
+      "vendor": true,
+      "bytes": 1087212
+    }
+  ]
+}

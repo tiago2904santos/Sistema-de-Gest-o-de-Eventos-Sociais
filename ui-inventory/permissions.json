@@ -1,0 +1,89 @@
+{
+  "namespaces_to_module": {
+    "atendimento_imprensa": "ASCOM_ATENDIMENTO_IMPRENSA",
+    "coffee_break": "ASCOM_COFFEE_BREAK",
+    "demandas_eventos": "ASCOM_DEMANDAS_EVENTOS",
+    "documentos": "VIAGENS",
+    "publicacoes": "ASCOM_PUBLICACOES",
+    "viagens_cadastros": "VIAGENS",
+    "viagens_oficios": "VIAGENS",
+    "viagens_ordens": "VIAGENS",
+    "viagens_planos": "VIAGENS",
+    "viagens_prestacoes": "VIAGENS",
+    "viagens_roteiros": "VIAGENS",
+    "viagens_termos": "VIAGENS",
+    "viagens_viagem": "VIAGENS"
+  },
+  "modules_in_portal": [
+    "agenda",
+    "atendimento_imprensa",
+    "coffee_break",
+    "demandas_eventos",
+    "eventos",
+    "publicacoes",
+    "relatorios",
+    "viagens"
+  ],
+  "modules_in_db": [
+    {
+      "codigo": "ASCOM_ATENDIMENTO_IMPRENSA",
+      "nome": "Atendimento à Imprensa (ASCOM)",
+      "ativo": true
+    },
+    {
+      "codigo": "ASCOM_COFFEE_BREAK",
+      "nome": "Coffee Break (ASCOM)",
+      "ativo": true
+    },
+    {
+      "codigo": "ASCOM_DEMANDAS_EVENTOS",
+      "nome": "ASCOM — Demandas de eventos",
+      "ativo": true
+    },
+    {
+      "codigo": "ASCOM_PUBLICACOES",
+      "nome": "Publicações (ASCOM)",
+      "ativo": true
+    },
+    {
+      "codigo": "VIAGENS",
+      "nome": "Viagens",
+      "ativo": true
+    }
+  ],
+  "groups_in_code": [
+    "ADMINISTRADOR",
+    "ANALISTA",
+    "GESTOR_DG",
+    "SOLICITANTE",
+    "VIAGENS_GESTOR",
+    "VIAGENS_OPERADOR"
+  ],
+  "groups_in_db": [
+    "ADMINISTRADOR",
+    "GESTOR_DG",
+    "SOLICITANTE",
+    "VIAGENS_GESTOR",
+    "VIAGENS_OPERADOR"
+  ],
+  "routes_without_explicit_guard_hint": [
+    "accounts:alterar_senha",
+    "accounts:senha_reset",
+    "accounts:senha_reset_concluido",
+    "accounts:senha_reset_confirmar",
+    "accounts:senha_reset_enviado",
+    "agenda:ics",
+    "agent_lab:error_preview",
+    "agent_lab:health",
+    "agent_lab:index",
+    "agent_lab:specimen",
+    "agent_lab:specimens",
+    "campo_diario:enviar",
+    "campo_diario:manifest",
+    "campo_diario:pagina",
+    "campo_diario:sw",
+    "core:home",
+    "viagens_entrada"
+  ],
+  "note": "routes_without_explicit_guard_hint é heurística (decorators na fonte); várias rotas são protegidas por middleware ou checagens internas."
+}

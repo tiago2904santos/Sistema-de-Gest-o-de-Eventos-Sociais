@@ -1,0 +1,534 @@
+{
+  "count": 8,
+  "modules": [
+    {
+      "slug": "agenda",
+      "nome": "Agenda",
+      "descricao": "Viagens, eventos, coffee break e palestras num calendário só, com o que você tem acesso.",
+      "icone": "calendar",
+      "codigo": null,
+      "entrada": "agenda:painel",
+      "namespaces": [
+        "agenda"
+      ],
+      "itens": [
+        {
+          "rotulo": "Agenda",
+          "icone": "calendar",
+          "url": "agenda:painel"
+        }
+      ],
+      "ordem": 5
+    },
+    {
+      "slug": "relatorios",
+      "nome": "Relatório",
+      "descricao": "Palestras, PCPR na Comunidade, eventos, coffee break, publicações, imprensa e viagens num relatório só.",
+      "icone": "chart",
+      "codigo": null,
+      "entrada": "relatorios:painel",
+      "namespaces": [
+        "relatorios"
+      ],
+      "itens": [
+        {
+          "rotulo": "Relatório",
+          "icone": "chart",
+          "url": "relatorios:painel"
+        }
+      ],
+      "ordem": 6
+    },
+    {
+      "slug": "eventos",
+      "nome": "Eventos Sociais",
+      "descricao": "Solicitações de eventos sociais, despacho da Diretoria-Geral e cadastros de apoio.",
+      "icone": "document",
+      "codigo": null,
+      "entrada": "dashboard:index",
+      "namespaces": [
+        "dashboard",
+        "solicitacoes",
+        "cadastros"
+      ],
+      "itens": [
+        {
+          "rotulo": "Dashboard",
+          "icone": "home",
+          "url": "dashboard:index"
+        },
+        {
+          "rotulo": "Solicitações",
+          "icone": "document",
+          "url": "solicitacoes:lista"
+        },
+        {
+          "rotulo": "Cadastros",
+          "icone": "checklist",
+          "url": "cadastros:index",
+          "somente_admin": true
+        }
+      ],
+      "ordem": 10
+    },
+    {
+      "slug": "coffee_break",
+      "nome": "Coffee Break",
+      "descricao": "Controle dos lotes contratados de coffee break da ASCOM: saldo, solicitações e fluxo de pagamento.",
+      "icone": "coffee",
+      "codigo": "ASCOM_COFFEE_BREAK",
+      "entrada": "coffee_break:painel",
+      "namespaces": [
+        "coffee_break"
+      ],
+      "itens": [
+        {
+          "rotulo": "Painel",
+          "icone": "home",
+          "url": "coffee_break:painel",
+          "url_names": [
+            "painel"
+          ]
+        },
+        {
+          "rotulo": "Lotes",
+          "icone": "coffee",
+          "url": "coffee_break:lotes",
+          "url_names": [
+            "lotes",
+            "lote_detalhe"
+          ]
+        },
+        {
+          "rotulo": "Solicitações",
+          "icone": "document",
+          "url": "coffee_break:solicitacoes",
+          "url_names": [
+            "solicitacoes",
+            "nova",
+            "detalhe",
+            "editar",
+            "etapa_nota",
+            "etapa_protocolo",
+            "cancelar",
+            "reativar"
+          ]
+        },
+        {
+          "rotulo": "Certidões",
+          "icone": "check-circle",
+          "url": "coffee_break:certidoes",
+          "url_names": [
+            "certidoes"
+          ]
+        },
+        {
+          "rotulo": "Cadastros",
+          "icone": "checklist",
+          "url": "coffee_break:cadastros",
+          "url_names": [
+            "cadastros",
+            "cadastro_lista",
+            "cadastro_novo",
+            "cadastro_editar"
+          ],
+          "somente_admin": true
+        },
+        {
+          "rotulo": "Textos dos documentos",
+          "icone": "document",
+          "url": "documentos:modelos_modulo",
+          "url_args": [
+            "coffee_break"
+          ],
+          "somente_admin": true
+        }
+      ],
+      "ordem": 20
+    },
+    {
+      "slug": "demandas_eventos",
+      "nome": "Palestras e Eventos",
+      "descricao": "Palestras, PCPR na Comunidade e eventos da ASCOM, no desenho da planilha: pedidos, palestrantes, temas e respostas padrão.",
+      "icone": "users",
+      "codigo": "ASCOM_DEMANDAS_EVENTOS",
+      "entrada": "demandas_eventos:dashboard",
+      "namespaces": [
+        "demandas_eventos"
+      ],
+      "itens": [
+        {
+          "rotulo": "Dashboard",
+          "icone": "home",
+          "url": "demandas_eventos:dashboard",
+          "url_names": [
+            "dashboard"
+          ]
+        },
+        {
+          "rotulo": "Palestras",
+          "icone": "users",
+          "url": "demandas_eventos:lista",
+          "url_names": [
+            "lista",
+            "nova",
+            "detalhe",
+            "editar"
+          ]
+        },
+        {
+          "rotulo": "Cadastros",
+          "icone": "checklist",
+          "url": "demandas_eventos:cadastro_lista",
+          "url_args": [
+            "palestrantes"
+          ],
+          "url_names": [
+            "cadastro_lista",
+            "cadastro_novo",
+            "cadastro_editar"
+          ]
+        }
+      ],
+      "ordem": 30
+    },
+    {
+      "slug": "publicacoes",
+      "nome": "Publicações",
+      "descricao": "Relatório de publicações da ASCOM: pautas recebidas, redação, revisão e publicação no site da PCPR e na AEN.",
+      "icone": "document",
+      "codigo": "ASCOM_PUBLICACOES",
+      "entrada": "publicacoes:painel",
+      "namespaces": [
+        "publicacoes"
+      ],
+      "itens": [
+        {
+          "rotulo": "Painel",
+          "icone": "home",
+          "url": "publicacoes:painel",
+          "url_names": [
+            "painel"
+          ]
+        },
+        {
+          "rotulo": "Publicações",
+          "icone": "document",
+          "url": "publicacoes:lista",
+          "url_names": [
+            "lista",
+            "nova",
+            "detalhe",
+            "editar",
+            "exportar"
+          ]
+        },
+        {
+          "rotulo": "Cadastros",
+          "icone": "checklist",
+          "url": "publicacoes:cadastros",
+          "url_names": [
+            "cadastros",
+            "cadastro_lista",
+            "cadastro_novo",
+            "cadastro_editar",
+            "cadastro_alternar"
+          ],
+          "somente_admin": true
+        }
+      ],
+      "ordem": 40
+    },
+    {
+      "slug": "viagens",
+      "nome": "Viagens",
+      "descricao": "Domínio de viagens: roteiros com cálculo de diárias e os cadastros que os sustentam — servidores, viaturas e vigências.",
+      "icone": "volante",
+      "codigo": "VIAGENS",
+      "entrada": "viagens_roteiros:lista",
+      "namespaces": [
+        "viagens_cadastros",
+        "viagens_roteiros",
+        "viagens_oficios",
+        "viagens_termos",
+        "viagens_prestacoes",
+        "viagens_viagem",
+        "viagens_ordens",
+        "viagens_planos"
+      ],
+      "itens": [
+        {
+          "rotulo": "Viagens",
+          "icone": "volante",
+          "url": "viagens_viagem:lista"
+        },
+        {
+          "rotulo": "Prestações",
+          "icone": "checklist",
+          "url": "viagens_prestacoes:index"
+        },
+        {
+          "rotulo": "Ofícios",
+          "icone": "file-text",
+          "url": "viagens_oficios:lista",
+          "url_names": [
+            "lista",
+            "novo",
+            "criar",
+            "editar",
+            "visualizar",
+            "visualizar_termo",
+            "detalhe",
+            "acao",
+            "baixar",
+            "gerar",
+            "termos_lote",
+            "termo",
+            "catalogo",
+            "catalogo_novo",
+            "catalogo_editar",
+            "numeracao",
+            "assinatura_artefato",
+            "preview_artefato"
+          ]
+        },
+        {
+          "rotulo": "Justificativas",
+          "icone": "document",
+          "url": "viagens_oficios:justificativas",
+          "url_names": [
+            "justificativas",
+            "justificativa_nova",
+            "justificativa_editar",
+            "justificativa_excluir"
+          ]
+        },
+        {
+          "rotulo": "Termos",
+          "icone": "file-text",
+          "url": "viagens_termos:lista"
+        },
+        {
+          "rotulo": "Roteiros",
+          "icone": "map-pin",
+          "url": "viagens_roteiros:lista"
+        },
+        {
+          "rotulo": "Planos de trabalho",
+          "icone": "clipboard",
+          "url": "viagens_planos:lista"
+        },
+        {
+          "rotulo": "Ordens de serviço",
+          "icone": "gavel",
+          "url": "viagens_ordens:lista"
+        },
+        {
+          "rotulo": "Cadastros",
+          "icone": "checklist",
+          "url": "viagens_cadastros:lista",
+          "url_args": [
+            "servidores"
+          ],
+          "slugs_fora": [
+            "motivos-oficio",
+            "modelos-justificativa",
+            "modelos-texto-rt"
+          ],
+          "subitens": [
+            {
+              "rotulo": "Servidores",
+              "icone": "users",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "servidores"
+              ]
+            },
+            {
+              "rotulo": "Viaturas",
+              "icone": "truck",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "viaturas"
+              ]
+            },
+            {
+              "rotulo": "Unidades",
+              "icone": "landmark",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "unidades"
+              ]
+            },
+            {
+              "rotulo": "Cargos",
+              "icone": "shield",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "cargos"
+              ]
+            },
+            {
+              "rotulo": "Combustíveis",
+              "icone": "activity",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "combustiveis"
+              ]
+            },
+            {
+              "rotulo": "Diárias",
+              "icone": "chart",
+              "url": "viagens_cadastros:diarias"
+            },
+            {
+              "rotulo": "Tipos de viagem",
+              "icone": "map-pin",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "tipos-viagem"
+              ]
+            },
+            {
+              "rotulo": "Programas",
+              "icone": "landmark",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "programas"
+              ]
+            },
+            {
+              "rotulo": "Horários",
+              "icone": "clock",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "horarios"
+              ]
+            },
+            {
+              "rotulo": "Atividades do plano",
+              "icone": "checklist",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "atividades-pt"
+              ]
+            },
+            {
+              "rotulo": "Presets",
+              "icone": "clipboard",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "presets-pt"
+              ]
+            }
+          ]
+        },
+        {
+          "rotulo": "Modelos",
+          "icone": "document",
+          "url": "viagens_cadastros:lista",
+          "url_args": [
+            "motivos-oficio"
+          ],
+          "slugs": [
+            "motivos-oficio",
+            "modelos-justificativa",
+            "modelos-texto-rt"
+          ],
+          "subitens": [
+            {
+              "rotulo": "Motivos de ofício",
+              "icone": "document",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "motivos-oficio"
+              ]
+            },
+            {
+              "rotulo": "Modelos de justificativa",
+              "icone": "document",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "modelos-justificativa"
+              ]
+            },
+            {
+              "rotulo": "Modelos de texto do RT",
+              "icone": "document",
+              "url": "viagens_cadastros:lista",
+              "url_args": [
+                "modelos-texto-rt"
+              ]
+            }
+          ]
+        },
+        {
+          "rotulo": "Configurações",
+          "icone": "settings",
+          "url": "viagens_oficios:institucional",
+          "url_names": [
+            "institucional"
+          ],
+          "visivel_para": "<callable eh_gestor_viagens>"
+        },
+        {
+          "rotulo": "Textos dos documentos",
+          "icone": "document",
+          "url": "documentos:modelos_modulo",
+          "url_args": [
+            "viagens"
+          ],
+          "visivel_para": "<callable eh_gestor_viagens>"
+        }
+      ],
+      "ordem": 40
+    },
+    {
+      "slug": "atendimento_imprensa",
+      "nome": "Atendimento à Imprensa",
+      "descricao": "Relatório de atendimento à imprensa da ASCOM: pedidos dos jornalistas, fontes consultadas, prazos e respostas.",
+      "icone": "mail",
+      "codigo": "ASCOM_ATENDIMENTO_IMPRENSA",
+      "entrada": "atendimento_imprensa:painel",
+      "namespaces": [
+        "atendimento_imprensa"
+      ],
+      "itens": [
+        {
+          "rotulo": "Painel",
+          "icone": "home",
+          "url": "atendimento_imprensa:painel",
+          "url_names": [
+            "painel"
+          ]
+        },
+        {
+          "rotulo": "Atendimentos",
+          "icone": "mail",
+          "url": "atendimento_imprensa:lista",
+          "url_names": [
+            "lista",
+            "novo",
+            "detalhe",
+            "editar",
+            "exportar"
+          ]
+        },
+        {
+          "rotulo": "Cadastros",
+          "icone": "checklist",
+          "url": "atendimento_imprensa:cadastros",
+          "url_names": [
+            "cadastros",
+            "cadastro_lista",
+            "cadastro_novo",
+            "cadastro_editar",
+            "cadastro_alternar"
+          ],
+          "somente_admin": true
+        }
+      ],
+      "ordem": 50
+    }
+  ]
+}

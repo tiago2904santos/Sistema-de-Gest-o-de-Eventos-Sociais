@@ -1,0 +1,146 @@
+{
+  "types": [
+    {
+      "tipo": "oficio",
+      "label": "Ofício",
+      "formats": [
+        "docx",
+        "pdf"
+      ]
+    },
+    {
+      "tipo": "termo_autorizacao",
+      "label": "Termo de autorização",
+      "formats": [
+        "docx",
+        "pdf"
+      ]
+    },
+    {
+      "tipo": "justificativa",
+      "label": "Justificativa",
+      "formats": [
+        "docx",
+        "pdf"
+      ]
+    },
+    {
+      "tipo": "relatorio_tecnico",
+      "label": "Relatório técnico",
+      "formats": [
+        "docx",
+        "pdf"
+      ]
+    },
+    {
+      "tipo": "ordem_servico",
+      "label": "Ordem de serviço",
+      "formats": [
+        "docx",
+        "pdf"
+      ]
+    },
+    {
+      "tipo": "plano_trabalho",
+      "label": "Plano de trabalho",
+      "formats": [
+        "docx",
+        "pdf"
+      ]
+    },
+    {
+      "tipo": "diario_bordo",
+      "label": "Diário de bordo",
+      "formats": [
+        "xlsx",
+        "pdf"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "file": "documentos/resources/diario_bordo.xlsx",
+      "bytes": 1289790
+    },
+    {
+      "file": "documentos/resources/justificativa.docx",
+      "bytes": 496291
+    },
+    {
+      "file": "documentos/resources/oficio.docx",
+      "bytes": 48210
+    },
+    {
+      "file": "documentos/resources/ordem_servico.docx",
+      "bytes": 565750
+    },
+    {
+      "file": "documentos/resources/ordem_servico_modelos.docx",
+      "bytes": 565757
+    },
+    {
+      "file": "documentos/resources/plano_trabalho.docx",
+      "bytes": 410534
+    },
+    {
+      "file": "documentos/resources/plano_trabalho_multievento.docx",
+      "bytes": 410642
+    },
+    {
+      "file": "documentos/resources/relatorio-tecnico.docx",
+      "bytes": 47223
+    },
+    {
+      "file": "documentos/resources/termo_autorizacao.docx",
+      "bytes": 564138
+    },
+    {
+      "file": "documentos/resources/termo_autorizacao_automatico.docx",
+      "bytes": 564155
+    },
+    {
+      "file": "documentos/resources/termo_autorizacao_automatico_sem_viatura.docx",
+      "bytes": 564248
+    }
+  ],
+  "golden": [
+    "documentos/tests/golden/diario_bordo.txt",
+    "documentos/tests/golden/justificativa.txt",
+    "documentos/tests/golden/oficio.txt",
+    "documentos/tests/golden/ordem_servico.txt",
+    "documentos/tests/golden/ordem_servico_modelos.txt",
+    "documentos/tests/golden/plano_trabalho.txt",
+    "documentos/tests/golden/plano_trabalho_multievento.txt",
+    "documentos/tests/golden/relatorio-tecnico.txt",
+    "documentos/tests/golden/sha256.json",
+    "documentos/tests/golden/termo_autorizacao.txt",
+    "documentos/tests/golden/termo_autorizacao_automatico.txt",
+    "documentos/tests/golden/termo_autorizacao_automatico_sem_viatura.txt"
+  ],
+  "pdf_html_native": [
+    "oficio",
+    "termo_autorizacao",
+    "justificativa",
+    "ordem_servico",
+    "plano_trabalho",
+    "relatorio_tecnico",
+    "diario_bordo"
+  ],
+  "pdf_templates": [
+    "documentos/pdf/_lacuna.html",
+    "documentos/pdf/_plano_lista.html",
+    "documentos/pdf/_rodape_ascom.html",
+    "documentos/pdf/base_institucional.html",
+    "documentos/pdf/coffee_break_certificado.html",
+    "documentos/pdf/coffee_break_certifico.html",
+    "documentos/pdf/coffee_break_oficio.html",
+    "documentos/pdf/coffee_break_ordem_servico.html",
+    "documentos/pdf/diario_bordo.html",
+    "documentos/pdf/justificativa.html",
+    "documentos/pdf/oficio.html",
+    "documentos/pdf/ordem_servico.html",
+    "documentos/pdf/plano_trabalho.html",
+    "documentos/pdf/relatorio_tecnico.html",
+    "documentos/pdf/termo_autorizacao.html"
+  ]
+}

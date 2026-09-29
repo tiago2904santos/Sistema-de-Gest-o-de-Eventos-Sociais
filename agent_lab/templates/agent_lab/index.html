@@ -1,0 +1,29 @@
+{% include "agent_lab/_head.html" %}
+<main class="lab" id="lab">
+  <h1>UI Lab</h1>
+  <p class="v32-suave">Componentes reais do produto, isolados, em cada estado. Cada cartão abre sozinho em <code>/_lab/c/&lt;id&gt;/</code> — é o alvo dos testes visuais e de acessibilidade por componente. Estados de interação (hover/focus) são aplicados pelo Playwright.</p>
+  {% for componente, itens in grupos.items %}
+    {% if componente == "components/icon.html" %}
+      <h2 id="icones">Ícones ({{ itens|length }})</h2>
+      <div class="lab-icons">
+        {% for i in itens %}<div class="lab-cel" data-specimen="{{ i.spec.id }}">{{ i.html|safe }}<div>{{ i.spec.context.nome }}</div></div>{% endfor %}
+      </div>
+    {% else %}
+      <h2>{{ componente }}</h2>
+      <div class="lab-grid">
+        {% for i in itens %}
+          <section class="lab-cel" data-specimen="{{ i.spec.id }}" data-state="{{ i.spec.state }}" aria-label="{{ i.spec.id }}">
+            <div class="lab-cel__meta"><a href="{% url 'agent_lab:specimen' i.spec.id %}">{{ i.spec.id }}</a><span>estado: {{ i.spec.state }}</span>{% if i.spec.note %}<span>{{ i.spec.note }}</span>{% endif %}</div>
+            {% if i.erro %}<div class="lab-erro">{{ i.erro }}</div>{% else %}<div class="lab-cel__alvo">{{ i.html|safe }}</div>{% endif %}
+          </section>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+  <h2 id="fumaca">Fumaça: todo componente renderiza sem contexto?</h2>
+  <table class="tab-v32"><caption class="sr-only">Resultado da renderização de cada componente sem contexto</caption>
+    <thead><tr><th scope="col">Componente</th><th scope="col">Resultado</th></tr></thead>
+    <tbody>{% for f in fumaca %}<tr data-smoke="{{ f.ok|yesno:'ok,falha' }}"><td><code>{{ f.template }}</code></td><td>{% if f.ok %}ok{% else %}<span class="lab-erro">{{ f.erro }}</span>{% endif %}</td></tr>{% endfor %}</tbody>
+  </table>
+</main>
+</body></html>

@@ -1,5 +1,6 @@
 """Rotas raiz do projeto."""
 
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
@@ -46,3 +47,8 @@ urlpatterns = [
     # Webhook do WhatsApp: rota externa e anônima (quem chama é a Meta),
     # fora do prefixo do módulo para não esbarrar na autorização por setor.
 ]
+
+if getattr(settings, "AGENT_LAB", False):
+    # UI Lab e sondas do agente — só existem quando o laboratório está instalado.
+    urlpatterns.insert(0, path("_lab/", include("agent_lab.urls")))
+

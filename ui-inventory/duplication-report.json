@@ -1,0 +1,1807 @@
+{
+  "identical_templates": [],
+  "selectors_defined_in_multiple_css_files": {
+    "*": [
+      "static/css/design-system.css",
+      "static/css/ds-v32.css",
+      "static/css/pages/diario-campo.css"
+    ],
+    ".acoes-roteiro": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".acoes-roteiro form": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".ag-filtros": [
+      "static/css/agenda-extras.css",
+      "static/css/agenda.css"
+    ],
+    ".ag-topo": [
+      "static/css/agenda-extras.css",
+      "static/css/agenda.css"
+    ],
+    ".an-add": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".autosave-status": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".aviso--callout .btn-primaria": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".aviso-rota": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".aviso-rota[hidden]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".barra__esq": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".bate-volta": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".bate-volta[hidden]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".bate-volta__resumo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".bate-volta__rotulo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".bate-volta__sentido": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".bate-volta__sentidos": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".bloco-split__corpo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".bloco-split__rotulo p": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".bloco-split__rotulo strong": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".btn-primaria": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".btn-primaria .ui-icon": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".btn-primaria:active": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".btn-primaria:hover": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".busca input::placeholder": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".cabeca__dir": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".cad-barra": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".cad-barra .busca": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".cad-grade": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".cad-lista .dt .tabela__col-icone": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".cad-lista .dt-w": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".cad-rail__h": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".campo-senha": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".campo-senha .form-controle": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".campo-senha__alternar": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".campo-senha__alternar .ui-icon": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".campo-senha__alternar:hover": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".cancelamento-form": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".coluna-oculta": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".composicao": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".composicao__resumo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".condicional": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".custom-date .custom-date__trigger": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date--multi": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date.is-enhanced .custom-date__native": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date.is-enhanced .custom-date__range-native": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date.is-enhanced .custom-date__trigger": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date.is-invalid .custom-date__trigger": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date.is-open .custom-date__trigger": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__cabecalho": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__calendar": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__calendar--multi": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__calendar[hidden]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__contagem": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__contexto": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dia": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dia.is-in-range": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dia.is-outside": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dia.is-range-end": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dia.is-range-start": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dia.is-selected": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dia.is-today": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dia:focus-visible": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dia:hover": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dia[data-ordem]::after": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dias": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__dica": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__instrucao": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__mes": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__navegacao": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__navegacao .ui-icon": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__navegacao button": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__navegacao button:focus-visible": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__navegacao button:hover": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__range-native": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__rodape": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__rodape button": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__rodape button:focus-visible": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__rodape button:hover": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__rodape--multi": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__rodape-acoes": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__salto": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__semana": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__semana span": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-date__trigger.has-value": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select .custom-select__trigger": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select.is-enhanced .custom-select__combobox": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select.is-enhanced .custom-select__native": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select.is-enhanced .custom-select__trigger": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select.is-open .custom-select__trigger": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__check": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__check .ui-icon": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__combobox::placeholder": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__lista": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__menu": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__menu[hidden]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__opcao": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__opcao.is-selected": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__opcao.is-selected .custom-select__check": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__opcao:focus-visible": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__opcao[hidden]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__trigger.has-value": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".custom-select__vazio": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".d-grade": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".db-2col": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".db-kpis": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".db-linha2": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".dc-aviso": [
+      "static/css/pages/diario-campo.css",
+      "static/css/pages/viagens-documento.css"
+    ],
+    ".destino-row--sede .destino-row__campo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".destino-row--sede .destino-row__estado": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".destino-row--unica .destino-row__alca": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".destino-row--unica .destino-row__remover": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".destino-row__adicionar": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".destino-row__alca": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".destino-row__campo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".destino-row__estado": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".destino-row__remover": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".dg-grade": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".dg-pe": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".dg-pe .btn--secundaria": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".diarias-metricas": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".dica-seguranca": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".dica-seguranca p": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".dica-seguranca__icone": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".dica-seguranca__icone .ui-icon": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".dt-w": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".editor-roteiro": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".editor-roteiro__acoes-cabecalho": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".editor-roteiro__aviso": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".editor-roteiro__lateral": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".editor-roteiro__principal": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".editor-roteiro__titulo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".editor-roteiro__topo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".erro-pagina__codigo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".etapa": [
+      "static/css/design-system.css",
+      "static/css/ds-v32.css"
+    ],
+    ".etapa-roteiro": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".etapa-roteiro--ativa .etapa-roteiro__numero": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".etapa-roteiro--concluida .etapa-roteiro__marca": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".etapa-roteiro--concluida .etapa-roteiro__numero": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".etapa-roteiro__marca": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".etapa-roteiro__numero": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".etapa-roteiro__texto": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".etapa-roteiro__texto small": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".etapa-roteiro__texto strong": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".etapas": [
+      "static/css/design-system.css",
+      "static/css/ds-v32.css"
+    ],
+    ".etapas-roteiro": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".fc>span:not(.fc__rot):not(.fc__n)": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".filas": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".filas::-webkit-scrollbar": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".forca-senha": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".forca-senha__barra": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".forca-senha__barra--forte.is-ativa": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".forca-senha__barra--fraca.is-ativa": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".forca-senha__barra--media.is-ativa": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".forca-senha__barras": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".forca-senha__texto[data-nivel=\"1\"]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".forca-senha__texto[data-nivel=\"2\"]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".forca-senha__texto[data-nivel=\"3\"]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-ajuda": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-campo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-controle": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-controle-wrapper": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-controle-wrapper--date .form-controle": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-controle-wrapper--date .form-controle::-webkit-calendar-picker-indicator": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-controle-wrapper--date:not(.is-enhanced) .custom-date__native::-webkit-calendar-picker-indicator": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-controle:focus": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-controle__icone": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-erro": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-label": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".form-label__obrigatorio": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".fpanel": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".frm-acoes--flut": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".frm-acoes--flut .btn--secundaria": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".frm-acoes--flut .btn-primaria": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".frm-grade": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".g-form .c2": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".g-form--2": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".g-form--3": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".gc": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".gc--3": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".gr": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".gr__b": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".gr__m": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".ident": [
+      "static/css/agenda-extras.css",
+      "static/css/ds-v32.css"
+    ],
+    ".ind": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".interruptor": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".interruptor--ligado .interruptor__botao": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".interruptor--ligado .interruptor__trilho": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".interruptor__botao": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".interruptor__trilho": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".is-arrastando-destino": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".is-arrastando-destino *": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".kicker": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".kpi": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".kpi--destaque b": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".m-sheet .campo": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".m-sheet .campo__label": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".mapa": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".mapa__acoes": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".mapa__carregando": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".mapa__carregando[hidden]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".mapa__erro": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".mapa__superficie": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".marca__org": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".medidor": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".medidor-legenda": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".medidor__preenchido": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".medidor__preenchido--atencao": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".medidor__preenchido--critico": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".metrica": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".metrica--destaque": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".metrica--larga": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".metrica__icone": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".metrica__rotulo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".metrica__valor": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".metrica__valor--texto": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".modulo__nome": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".nav-mod": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".navbar": [
+      "static/css/design-system.css",
+      "static/css/ds-v32.css"
+    ],
+    ".notificacao-cartao": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao--nova": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao--nova .notificacao-cartao__ponto": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao__conteudo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao__icone": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao__icone .ui-icon": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao__mensagem": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao__meta": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao__ponto": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao__quando": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao__quando .ui-icon": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacao-cartao__seta": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacoes-filtros": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacoes-grupo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacoes-vazio p": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".notificacoes-vazio__icone": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".pag__passo[aria-disabled=true]": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".painel": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".perfil-badge": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".perfil-badge .ui-icon": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".perfil-badge--super": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-admin": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-admin__texto": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-card": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-card__acoes": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-card__cabecalho": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-card__descricao": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-card__metrica": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-card__metrica dd": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-card__metrica dt": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-card__metrica--destaque dd": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-card__metricas": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-card__titulo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".portal-grid": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".prestacao-upload": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-prestacoes.css"
+    ],
+    ".reg": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".reg--sec .reg__t": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".requisitos-senha": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".requisitos-senha__icone": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".requisitos-senha__icone .ui-icon": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".requisitos-senha__lista": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".requisitos-senha__lista .ui-icon": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".requisitos-senha__lista li": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".rota-metricas": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".section-card__cabecalho": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".senha-corpo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".spinner": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".sr-only": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".st--rascunho": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".stepper-n": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".stepper-n button": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".stepper-n button:hover": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".stepper-n input": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".sticky": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css"
+    ],
+    ".tempo-stepper": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".tempo-stepper__valor": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".trecho-linha[hidden]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".trecho-linha__cidade": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".trecho-linha__erros[hidden]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".trecho-linha__nota": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".trechos-tabela .form-campo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".trechos-tabela th": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".trechos-vazio": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".trechos-vazio strong": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".trechos-vazio[hidden]": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".ui-icon": [
+      "static/css/design-system.css",
+      "static/css/ds-v32.css"
+    ],
+    ".usuario-avatar": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".usuario-avatar--inativo": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".usuario-celula": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".usuario-celula__dados": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".usuario-celula__dados small": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".usuario-form__linha": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ],
+    ".viagens-dependencias span": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-exclusao": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-exclusao h2": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-exclusao__icone": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-exclusao__icone--bloqueada": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-exclusao__resumo": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-exclusao__resumo div": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-exclusao__resumo small": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-eyebrow": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-opcao-padrao": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-opcao-padrao small": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ".viagens-switch input": [
+      "static/css/ds-v32-bridge.css",
+      "static/css/viagens-cadastros.css"
+    ],
+    ":root": [
+      "static/css/agenda.css",
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css",
+      "static/css/ds-v32.css",
+      "static/css/pages/diario-campo.css"
+    ],
+    "a": [
+      "static/css/design-system.css",
+      "static/css/ds-v32.css"
+    ],
+    "body": [
+      "static/css/design-system.css",
+      "static/css/ds-v32.css"
+    ],
+    "h1": [
+      "static/css/design-system.css",
+      "static/css/ds-v32.css"
+    ],
+    "textarea.form-controle": [
+      "static/css/design-system.css",
+      "static/css/ds-v32-bridge.css"
+    ]
+  },
+  "selectors_defined_in_multiple_css_files_total": 308,
+  "color_tokens_with_same_value": {
+    "#1c7040": [
+      "--dc-ok-t",
+      "--ok-t"
+    ],
+    "#1f1f1f": [
+      "--gc-cor-t",
+      "--gc-txt"
+    ],
+    "#262626": [
+      "--cor-grafite-900",
+      "--dc-texto",
+      "--n-950"
+    ],
+    "#333333": [
+      "--cor-grafite-800",
+      "--cor-primaria",
+      "--cor-texto",
+      "--dc-grafite",
+      "--grafite",
+      "--n-900"
+    ],
+    "#404040": [
+      "--cor-grafite-700",
+      "--cor-primaria-hover"
+    ],
+    "#4d4d4d": [
+      "--cor-grafite-600",
+      "--n-700"
+    ],
+    "#5e5e5e": [
+      "--dc-suave",
+      "--n-600",
+      "--nt-t"
+    ],
+    "#616161": [
+      "--ag-prazo",
+      "--ag-prazo-r"
+    ],
+    "#7d5a00": [
+      "--dc-wn-t",
+      "--wn-t"
+    ],
+    "#808080": [
+      "--cor-cinza-500",
+      "--cor-texto-suave",
+      "--n-400"
+    ],
+    "#a32b22": [
+      "--dc-dg-t",
+      "--dg-t"
+    ],
+    "#bea45a": [
+      "--cor-dourado-400",
+      "--cor-dourado-500",
+      "--cor-dourado-700",
+      "--d-500",
+      "--d-600",
+      "--dc-dourado"
+    ],
+    "#c9b06d": [
+      "--d-400",
+      "--d-550"
+    ],
+    "#d1d3d4": [
+      "--cor-borda",
+      "--cor-cinza-300",
+      "--dc-borda",
+      "--n-250",
+      "--nt-r"
+    ],
+    "#d50000": [
+      "--ag-prazo-vencido",
+      "--ag-prazo-vencido-r"
+    ],
+    "#e9f2ec": [
+      "--dc-ok-b",
+      "--ok-b"
+    ],
+    "#eff0f0": [
+      "--n-100",
+      "--nt-b"
+    ],
+    "#f6bf26": [
+      "--ag-prazo-proximo",
+      "--ag-prazo-proximo-r"
+    ],
+    "#fafafa": [
+      "--dc-papel",
+      "--papel"
+    ],
+    "#fdeeec": [
+      "--dc-dg-b",
+      "--dg-b"
+    ],
+    "#fdf3dd": [
+      "--dc-wn-b",
+      "--wn-b"
+    ],
+    "#fff": [
+      "--ag-coffee-t",
+      "--ag-demanda-t",
+      "--ag-prazo-t",
+      "--ag-prazo-vencido-t",
+      "--ag-solicitacao-t",
+      "--ag-viagem-t",
+      "--branco",
+      "--dc-branco",
+      "--fc-neutral-bg-color",
+      "--fc-page-bg-color",
+      "--gc-sup"
+    ]
+  },
+  "tokens_with_conflicting_definitions": [
+    "--acento",
+    "--acento-num",
+    "--cabeca-y",
+    "--ctrl-h",
+    "--date",
+    "--fc-event-bg-color",
+    "--fc-event-text-color",
+    "--gc-cor",
+    "--gc-cor-t",
+    "--l2",
+    "--linha-y",
+    "--link",
+    "--n-450",
+    "--perigo",
+    "--reg-px",
+    "--reg-py",
+    "--rotulo-fundo",
+    "--secundaria",
+    "--select"
+  ],
+  "js_functions_defined_in_multiple_files": {
+    "abrir": [
+      "static/js/agenda.js",
+      "static/js/anexar-assinado.js",
+      "static/js/app.js",
+      "static/js/baixar-documentos.js",
+      "static/js/buscar-endereco.js",
+      "static/js/coffee-break-importar.js",
+      "static/js/coffee-break-vincular.js",
+      "static/js/documento-editor.js",
+      "static/js/multi-pick.js",
+      "static/js/nome-sugerido.js",
+      "static/js/prestacoes-importar.js",
+      "static/js/viagens-oficios.js"
+    ],
+    "agendar": [
+      "static/js/autosave-rascunho.js",
+      "static/js/diario-campo.js",
+      "static/js/viagens-prestacoes.js"
+    ],
+    "ajustarAltura": [
+      "static/js/agenda.js",
+      "static/js/documento-completo.js",
+      "static/js/documento-modelo.js"
+    ],
+    "alternarTexto": [
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js"
+    ],
+    "anunciar": [
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js"
+    ],
+    "aplicar": [
+      "static/js/app.js",
+      "static/js/buscar-endereco.js",
+      "static/js/preencher-por-email.js",
+      "static/js/sugestao-solicitante.js",
+      "static/js/viagens-planos.js"
+    ],
+    "atualizar": [
+      "static/js/anexar-assinado.js",
+      "static/js/app.js",
+      "static/js/baixar-documentos.js",
+      "static/js/coffee-break-importar.js",
+      "static/js/prestacoes-importar.js",
+      "static/js/trilho.js",
+      "static/js/viagens-cadastros.js",
+      "static/js/viagens-documento.js",
+      "static/js/viagens-gerar-documentos.js",
+      "static/js/viagens-planos.js",
+      "static/js/viagens-prestacoes.js"
+    ],
+    "atualizarEstado": [
+      "static/js/viagens-ordens.js",
+      "static/js/viagens-planos.js",
+      "static/js/viagens-termos.js",
+      "static/js/viagens-viagem.js"
+    ],
+    "atualizarSugestoes": [
+      "static/js/viagens-oficios.js",
+      "static/js/viagens-prestacoes.js"
+    ],
+    "avisar": [
+      "static/js/agenda-extras.js",
+      "static/js/pages/viagens-configuracoes.js"
+    ],
+    "buscar": [
+      "static/js/buscar-endereco.js",
+      "static/js/coffee-break-lote.js",
+      "static/js/pages/viagens-configuracoes.js",
+      "static/js/solicitacoes-form.js",
+      "static/js/sugestao-solicitante.js"
+    ],
+    "campo": [
+      "static/js/app.js",
+      "static/js/pages/prestacoes-carimbo.js",
+      "static/js/roteiro-editor.js",
+      "static/js/solicitacoes-form.js",
+      "static/js/viagens-oficios.js",
+      "static/js/viagens-prestacoes.js"
+    ],
+    "carregar": [
+      "static/js/agenda.js",
+      "static/js/coffee-break-documentos.js",
+      "static/js/components/pdf-place.js",
+      "static/js/diario-campo.js",
+      "static/js/documento-embutido.js",
+      "static/js/viagens-planos.js"
+    ],
+    "copiaDe": [
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js"
+    ],
+    "criarLinha": [
+      "static/js/viagens-ordens.js",
+      "static/js/viagens-planos.js",
+      "static/js/viagens-termos.js",
+      "static/js/viagens-viagem.js"
+    ],
+    "csrf": [
+      "static/js/autosave-rascunho.js",
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js",
+      "static/js/viagens-prestacoes.js"
+    ],
+    "definir": [
+      "static/js/buscar-endereco.js",
+      "static/js/coffee-break-lote.js",
+      "static/js/ds-v32.js",
+      "static/js/preencher-por-email.js",
+      "static/js/sugestao-solicitante.js"
+    ],
+    "desarmar": [
+      "static/js/app.js",
+      "static/js/viagens-prestacoes.js"
+    ],
+    "desenhar": [
+      "static/js/agenda.js",
+      "static/js/coffee-break-pdf.js",
+      "static/js/components/pdf-place.js",
+      "static/js/pages/prestacoes-pacote.js",
+      "static/js/prestacoes-importacao.js"
+    ],
+    "destacar": [
+      "static/js/buscar-endereco.js",
+      "static/js/lista-escolha.js",
+      "static/js/multi-pick.js",
+      "static/js/nome-sugerido.js"
+    ],
+    "disparar": [
+      "static/js/buscar-endereco.js",
+      "static/js/preencher-por-email.js",
+      "static/js/solicitacoes-form.js",
+      "static/js/sugestao-solicitante.js",
+      "static/js/viagens-oficios.js",
+      "static/js/viagens-ordens.js",
+      "static/js/viagens-planos.js"
+    ],
+    "doc": [
+      "static/js/documento-completo.js",
+      "static/js/documento-modelo.js"
+    ],
+    "documentoDaFolha": [
+      "static/js/documento-editor.js",
+      "static/js/viagens-documento.js"
+    ],
+    "editavel": [
+      "static/js/app.js",
+      "static/js/buscar-endereco.js"
+    ],
+    "el": [
+      "static/js/buscar-endereco.js",
+      "static/js/coffee-break-lote.js",
+      "static/js/preencher-por-email.js",
+      "static/js/solicitacoes-form.js",
+      "static/js/sugestao-solicitante.js",
+      "static/js/triagem-email.js"
+    ],
+    "enviando": [
+      "static/js/coffee-break-importar.js",
+      "static/js/prestacoes-importar.js"
+    ],
+    "enviar": [
+      "static/js/autosave-rascunho.js",
+      "static/js/diario-campo.js",
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js",
+      "static/js/viagens-prestacoes.js"
+    ],
+    "escolher": [
+      "static/js/anexar-assinado.js",
+      "static/js/nome-sugerido.js",
+      "static/js/viagens-oficios.js"
+    ],
+    "esconder": [
+      "static/js/coffee-break-lote.js",
+      "static/js/sugestao-solicitante.js"
+    ],
+    "extensaoDe": [
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js"
+    ],
+    "fechar": [
+      "static/js/agenda.js",
+      "static/js/app.js",
+      "static/js/buscar-endereco.js",
+      "static/js/documento-editor.js",
+      "static/js/ds-v32.js",
+      "static/js/multi-pick.js",
+      "static/js/nome-sugerido.js"
+    ],
+    "fecharMenu": [
+      "static/js/coffee-break-importar.js",
+      "static/js/prestacoes-importar.js"
+    ],
+    "filtrar": [
+      "static/js/nome-sugerido.js",
+      "static/js/viagens-oficios.js"
+    ],
+    "focar": [
+      "static/js/documento-editor.js",
+      "static/js/documento-modelo.js",
+      "static/js/preencher-por-email.js"
+    ],
+    "gravar": [
+      "static/js/agenda.js",
+      "static/js/pages/prestacoes-carimbo.js",
+      "static/js/pages/prestacoes-pacote.js"
+    ],
+    "guardar": [
+      "static/js/app.js",
+      "static/js/diario-campo.js"
+    ],
+    "iniciar": [
+      "static/js/conflitos.js",
+      "static/js/documento-embutido.js",
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js"
+    ],
+    "km": [
+      "static/js/diario-campo.js",
+      "static/js/roteiro-editor.js"
+    ],
+    "lerArquivo": [
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js"
+    ],
+    "lerJson": [
+      "static/js/viagens-oficios.js",
+      "static/js/viagens-ordens.js",
+      "static/js/viagens-planos.js"
+    ],
+    "lerTexto": [
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js"
+    ],
+    "ligar": [
+      "static/js/documento-embutido.js",
+      "static/js/lista-escolha.js",
+      "static/js/nome-sugerido.js",
+      "static/js/viagens-cadastros.js",
+      "static/js/viagens-documento.js"
+    ],
+    "ligarFolha": [
+      "static/js/documento-completo.js",
+      "static/js/documento-editor.js",
+      "static/js/documento-modelo.js"
+    ],
+    "limpar": [
+      "static/js/viagens-ordens.js",
+      "static/js/viagens-planos.js",
+      "static/js/viagens-termos.js",
+      "static/js/viagens-viagem.js"
+    ],
+    "linha": [
+      "static/js/baixar-documentos.js",
+      "static/js/solicitacoes-form.js",
+      "static/js/viagens-oficios.js"
+    ],
+    "linhas": [
+      "static/js/destinos-arraste.js",
+      "static/js/lista-escolha.js",
+      "static/js/viagens-ordens.js",
+      "static/js/viagens-planos.js",
+      "static/js/viagens-termos.js",
+      "static/js/viagens-viagem.js"
+    ],
+    "marcados": [
+      "static/js/baixar-documentos.js",
+      "static/js/palestras-form.js",
+      "static/js/viagens-ordens.js"
+    ],
+    "marcar": [
+      "static/js/autosave-rascunho.js",
+      "static/js/coffee-break-importar.js",
+      "static/js/documento-completo.js",
+      "static/js/documento-editor.js",
+      "static/js/documento-modelo.js",
+      "static/js/preencher-por-email.js",
+      "static/js/prestacoes-importar.js"
+    ],
+    "marcavel": [
+      "static/js/preencher-por-email.js",
+      "static/js/solicitacoes-form.js"
+    ],
+    "mascaraProtocolo": [
+      "static/js/coffee-break-protocolo.js",
+      "static/js/palestras-form.js",
+      "static/js/viagens-oficios.js"
+    ],
+    "mensagemDeFalha": [
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js"
+    ],
+    "montar": [
+      "static/js/diario-campo.js",
+      "static/js/documento-completo.js",
+      "static/js/documento-editor.js",
+      "static/js/pages/prestacoes-pacote.js"
+    ],
+    "mostrar": [
+      "static/js/autosave-rascunho.js",
+      "static/js/buscar-endereco.js",
+      "static/js/coffee-break-lote.js",
+      "static/js/conflitos.js",
+      "static/js/preencher-por-email.js",
+      "static/js/solicitacoes-form.js",
+      "static/js/sugestao-solicitante.js",
+      "static/js/triagem-email.js",
+      "static/js/viagens-prestacoes.js",
+      "static/js/viagens-viagem.js"
+    ],
+    "mostrarErro": [
+      "static/js/anexar-assinado.js",
+      "static/js/coffee-break-importar.js",
+      "static/js/documento-modelo.js",
+      "static/js/preencher-por-email.js",
+      "static/js/prestacoes-importar.js",
+      "static/js/roteiro-editor.js",
+      "static/js/triagem-email.js"
+    ],
+    "mudou": [
+      "static/js/documento-completo.js",
+      "static/js/viagens-oficios.js"
+    ],
+    "nomeDaLinha": [
+      "static/js/viagens-gerar-documentos.js",
+      "static/js/viagens-oficios.js"
+    ],
+    "nomearDestinos": [
+      "static/js/viagens-ordens.js",
+      "static/js/viagens-planos.js"
+    ],
+    "numero": [
+      "static/js/viagens-cadastros.js",
+      "static/js/viagens-prestacoes.js"
+    ],
+    "ocupado": [
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js"
+    ],
+    "passos": [
+      "static/js/app.js",
+      "static/js/solicitacoes-form.js"
+    ],
+    "pendentes": [
+      "static/js/diario-campo.js",
+      "static/js/multi-pick.js",
+      "static/js/viagens-cadastros.js"
+    ],
+    "plural": [
+      "static/js/preencher-por-email.js",
+      "static/js/viagens-gerar-documentos.js"
+    ],
+    "posicionar": [
+      "static/js/app.js",
+      "static/js/components/pdf-place.js",
+      "static/js/documento-editor.js",
+      "static/js/trilho.js",
+      "static/js/viagens-modal-select.js"
+    ],
+    "preencher": [
+      "static/js/diario-campo.js",
+      "static/js/pages/viagens-configuracoes.js",
+      "static/js/viagens-prestacoes.js"
+    ],
+    "recarregarFolha": [
+      "static/js/documento-editor.js",
+      "static/js/documento-embutido.js"
+    ],
+    "renderizar": [
+      "static/js/app.js",
+      "static/js/viagens-planos.js"
+    ],
+    "restaurar": [
+      "static/js/app.js",
+      "static/js/documento-editor.js"
+    ],
+    "retrato": [
+      "static/js/app.js",
+      "static/js/autosave-rascunho.js"
+    ],
+    "salvar": [
+      "static/js/documento-completo.js",
+      "static/js/documento-editor.js",
+      "static/js/documento-modelo.js"
+    ],
+    "selectsDe": [
+      "static/js/viagens-ordens.js",
+      "static/js/viagens-planos.js",
+      "static/js/viagens-termos.js",
+      "static/js/viagens-viagem.js"
+    ],
+    "semAcento": [
+      "static/js/nome-sugerido.js",
+      "static/js/palestras-form.js",
+      "static/js/viagens-oficios.js"
+    ],
+    "sincronizar": [
+      "static/js/app.js",
+      "static/js/multi-pick.js"
+    ],
+    "slice": [
+      "static/js/destinos-arraste.js",
+      "static/js/roteiro-editor.js"
+    ],
+    "temArquivo": [
+      "static/js/coffee-break-importar.js",
+      "static/js/prestacoes-importar.js"
+    ],
+    "temArquivos": [
+      "static/js/preencher-por-email.js",
+      "static/js/triagem-email.js"
+    ],
+    "trechos": [
+      "static/js/diario-campo.js",
+      "static/js/documento-modelo.js"
+    ],
+    "valorDe": [
+      "static/js/diario-campo.js",
+      "static/js/roteiro-editor.js",
+      "static/js/viagens-prestacoes.js"
+    ],
+    "visiveis": [
+      "static/js/destinos-arraste.js",
+      "static/js/multi-pick.js",
+      "static/js/nome-sugerido.js"
+    ]
+  }
+}

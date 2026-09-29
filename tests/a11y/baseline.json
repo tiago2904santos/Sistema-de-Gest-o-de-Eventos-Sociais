@@ -1,0 +1,86 @@
+{
+  "agenda": {
+    "critical": 5,
+    "serious": 49
+  },
+  "cadastros": {
+    "critical": 0,
+    "serious": 3
+  },
+  "coffee-lista": {
+    "critical": 0,
+    "serious": 3
+  },
+  "dashboard": {
+    "critical": 0,
+    "serious": 3
+  },
+  "erro-404": {
+    "critical": 0,
+    "serious": 4
+  },
+  "hub": {
+    "critical": 0,
+    "serious": 3
+  },
+  "imprensa-lista": {
+    "critical": 0,
+    "serious": 3
+  },
+  "login": {
+    "critical": 0,
+    "serious": 3
+  },
+  "oficios-lista": {
+    "critical": 0,
+    "serious": 3
+  },
+  "ordens-lista": {
+    "critical": 0,
+    "serious": 3
+  },
+  "palestras-lista": {
+    "critical": 0,
+    "serious": 3
+  },
+  "planos-lista": {
+    "critical": 0,
+    "serious": 3
+  },
+  "prestacoes-lista": {
+    "critical": 0,
+    "serious": 52
+  },
+  "publicacoes-lista": {
+    "critical": 0,
+    "serious": 5
+  },
+  "relatorios": {
+    "critical": 0,
+    "serious": 3
+  },
+  "roteiros-lista": {
+    "critical": 0,
+    "serious": 3
+  },
+  "solicitacoes-lista": {
+    "critical": 0,
+    "serious": 5
+  },
+  "solicitacoes-nova": {
+    "critical": 0,
+    "serious": 9
+  },
+  "termos-lista": {
+    "critical": 0,
+    "serious": 3
+  },
+  "viagem-lista": {
+    "critical": 0,
+    "serious": 3
+  },
+  "viagens-cadastros": {
+    "critical": 0,
+    "serious": 11
+  }
+}

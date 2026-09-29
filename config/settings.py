@@ -87,6 +87,12 @@ INSTALLED_APPS = [
     "migracao_legado",
 ]
 
+# Laboratório do agente (inventário, seed determinístico, UI Lab, auditoria).
+# Ligado por padrão só em desenvolvimento; em produção nunca é instalado.
+AGENT_LAB = os.environ.get("AGENT_LAB", "1" if DEBUG else "0") == "1"
+if AGENT_LAB:
+    INSTALLED_APPS.append("agent_lab")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     # WhiteNoise serve os estáticos direto do app em produção (waitress).
@@ -153,7 +159,9 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            # SQLITE_PATH: o laboratório do agente usa um arquivo próprio para
+            # nunca tocar o db.sqlite3 de quem desenvolve.
+            "NAME": os.environ.get("SQLITE_PATH") or BASE_DIR / "db.sqlite3",
         }
     }
 
@@ -275,7 +283,7 @@ ROUTE_REQUEST_TIMEOUT_SECONDS = int(
 )
 # Município do percurso sem coordenadas é buscado no OpenStreetMap na hora.
 # Nos testes fica desligado: nada de rede durante a suíte.
-GEOCODIFICAR_SOB_DEMANDA = sys.argv[1:2] != ["test"]
+GEOCODIFICAR_SOB_DEMANDA = sys.argv[1:2] != ["test"] and os.environ.get("GEOCODIFICAR_SOB_DEMANDA", "1") == "1"
 
 # Núcleo documental síncrono. Motores nativos são opcionais e sondados sob demanda.
 DOCUMENTOS_DEFAULT_PDF_ENGINE = os.environ.get("DOCUMENTOS_DEFAULT_PDF_ENGINE", "auto")

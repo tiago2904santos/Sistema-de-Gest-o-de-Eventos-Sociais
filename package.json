@@ -1,0 +1,47 @@
+{
+  "name": "sistema-eventos-sociais-lab",
+  "private": true,
+  "description": "Laboratório de QA do agente: Playwright (E2E, smoke, visual, a11y, responsivo, performance) sobre o Django.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --project=smoke",
+    "test:e2e": "playwright test --project=e2e",
+    "test:visual": "playwright test --project=visual",
+    "test:visual:update": "playwright test --project=visual --update-snapshots",
+    "test:a11y": "playwright test --project=a11y",
+    "test:responsive": "playwright test --project=responsive",
+    "test:perf": "playwright test --project=perf",
+    "test:report": "playwright show-report reports/testing/playwright-html",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "audit:page": "node tests/tools/audit-page.mjs",
+    "agent:bootstrap": "node scripts/agent/run.mjs bootstrap",
+    "agent:health": "node scripts/agent/run.mjs health",
+    "agent:health:quick": "node scripts/agent/run.mjs health --quick",
+    "agent:serve": "node scripts/agent/run.mjs serve",
+    "agent:reset": "node scripts/agent/run.mjs reset",
+    "agent:seed": "node scripts/agent/run.mjs seed",
+    "agent:inventory": "node scripts/agent/run.mjs inventory",
+    "agent:depgraph": "node scripts/agent/run.mjs depgraph",
+    "agent:audit": "node scripts/agent/run.mjs audit",
+    "agent:env": "node scripts/agent/run.mjs env",
+    "posttest:a11y": "node tests/tools/summarize.mjs a11y",
+    "posttest:perf": "node tests/tools/summarize.mjs perf",
+    "posttest:responsive": "node tests/tools/summarize.mjs responsive",
+    "test:a11y:baseline": "playwright test --project=a11y; node tests/tools/summarize.mjs a11y --update-baseline"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
+    "@playwright/test": "1.56.0",
+    "@types/node": "22.10.2",
+    "typescript": "5.7.2",
+    "pixelmatch": "7.1.0",
+    "pngjs": "7.0.0"
+  },
+  "overrides": {
+    "playwright-core": "1.56.0"
+  }
+}

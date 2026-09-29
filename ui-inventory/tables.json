@@ -1,0 +1,631 @@
+{
+  "count": 53,
+  "tables": [
+    {
+      "template": "agent_lab/index.html",
+      "file": "agent_lab/templates/agent_lab/index.html",
+      "headers": [
+        "Componente",
+        "Resultado"
+      ],
+      "has_caption": true,
+      "th_scope": true,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "file": "templates/coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "file": "templates/coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "file": "templates/coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "headers": [
+        "Mês",
+        "OS",
+        "Unidades",
+        "Valor"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "file": "templates/coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "headers": [
+        "Município",
+        "OS",
+        "Unidades"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "file": "templates/coffee_break/documentos/_relatorio_contrato_corpo.html",
+      "headers": [
+        "Lote",
+        "Situação",
+        "Capacidade",
+        "Consumido",
+        "Restante",
+        "Empenho"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "components/v32/lista_embutida.html",
+      "file": "templates/components/v32/lista_embutida.html",
+      "headers": [
+        "Tipo",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "components/v32/lista_registros.html",
+      "file": "templates/components/v32/lista_registros.html",
+      "headers": [
+        "Tipo",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/coffee_break_certificado.html",
+      "file": "templates/documentos/pdf/coffee_break_certificado.html",
+      "headers": [
+        "Número",
+        "Data da solicitação",
+        "Quantidade",
+        "Situação",
+        "Evento",
+        "Período do evento"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/coffee_break_certificado.html",
+      "file": "templates/documentos/pdf/coffee_break_certificado.html",
+      "headers": [
+        "Lote",
+        "Exercício",
+        "Contrato",
+        "Número GMS",
+        "Empenho",
+        "Fiscal do contrato",
+        "Fornecedor",
+        "CNPJ",
+        "Municípios do lote"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/coffee_break_certificado.html",
+      "file": "templates/documentos/pdf/coffee_break_certificado.html",
+      "headers": [
+        "Marco",
+        "Registro"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/diario_bordo.html",
+      "file": "templates/documentos/pdf/diario_bordo.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/diario_bordo.html",
+      "file": "templates/documentos/pdf/diario_bordo.html",
+      "headers": [
+        "Saída",
+        "Chegada",
+        "Origem",
+        "Destino",
+        "Necessidade de abastecimento",
+        "Data",
+        "Hora",
+        "KM (inicial)",
+        "Data",
+        "Hora",
+        "KM (final)"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/oficio.html",
+      "file": "templates/documentos/pdf/oficio.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/oficio.html",
+      "file": "templates/documentos/pdf/oficio.html",
+      "headers": [
+        "Nome",
+        "CPF",
+        "Cargo",
+        "Nº solicitação(Central de Viagens)"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/oficio.html",
+      "file": "templates/documentos/pdf/oficio.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/oficio.html",
+      "file": "templates/documentos/pdf/oficio.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/oficio.html",
+      "file": "templates/documentos/pdf/oficio.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/oficio.html",
+      "file": "templates/documentos/pdf/oficio.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/oficio.html",
+      "file": "templates/documentos/pdf/oficio.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/relatorio_tecnico.html",
+      "file": "templates/documentos/pdf/relatorio_tecnico.html",
+      "headers": [
+        "Nome",
+        "CPF"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/relatorio_tecnico.html",
+      "file": "templates/documentos/pdf/relatorio_tecnico.html",
+      "headers": [
+        "Diária:",
+        "Translado:",
+        "Combustível:",
+        "Passagem:"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "documentos/pdf/relatorio_tecnico.html",
+      "file": "templates/documentos/pdf/relatorio_tecnico.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/agenda/_detalhe.html",
+      "file": "templates/pages/agenda/_detalhe.html",
+      "headers": [
+        "Tipo",
+        "Documentos"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/agenda/_detalhe.html",
+      "file": "templates/pages/agenda/_detalhe.html",
+      "headers": [
+        "Tipo",
+        "Documento",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/agenda/escala.html",
+      "file": "templates/pages/agenda/escala.html",
+      "headers": [
+        "Pessoa",
+        "Dias fora"
+      ],
+      "has_caption": false,
+      "th_scope": true,
+      "responsive_wrapper_hint": true
+    },
+    {
+      "template": "pages/agenda/pauta.html",
+      "file": "templates/pages/agenda/pauta.html",
+      "headers": [
+        "Compromisso",
+        "Horário",
+        "Local",
+        "Equipe",
+        "Situação"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/atendimento_imprensa/form.html",
+      "file": "templates/pages/atendimento_imprensa/form.html",
+      "headers": [
+        "Fonte",
+        "Acionada",
+        "Retornou"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/cadastros/lista.html",
+      "file": "templates/pages/cadastros/lista.html",
+      "headers": [
+        "Nome",
+        "Estado",
+        "Região",
+        "Atualizado em",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/coffee_break/virada_exercicio.html",
+      "file": "templates/pages/coffee_break/virada_exercicio.html",
+      "headers": [
+        "Criar",
+        "Lote de",
+        "Quantidade em",
+        "Empenho",
+        "Valor do empenho"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/relatorios/_secao.html",
+      "file": "templates/pages/relatorios/_secao.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/solicitacoes/form.html",
+      "file": "templates/pages/solicitacoes/form.html",
+      "headers": [
+        "Arquivo",
+        "Enviado por",
+        "Quando",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_cadastros/lista.html",
+      "file": "templates/pages/viagens_cadastros/lista.html",
+      "headers": [
+        "Situação",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_oficios/_artefatos.html",
+      "file": "templates/pages/viagens_oficios/_artefatos.html",
+      "headers": [
+        "Documento",
+        "Gerado em",
+        "Formato"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_oficios/justificativas.html",
+      "file": "templates/pages/viagens_oficios/justificativas.html",
+      "headers": [
+        "Tipo",
+        "Justificativa",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_oficios/lista.html",
+      "file": "templates/pages/viagens_oficios/lista.html",
+      "headers": [
+        "Tipo",
+        "Ofício",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_ordens/lista.html",
+      "file": "templates/pages/viagens_ordens/lista.html",
+      "headers": [
+        "Tipo",
+        "Ordem de Serviço",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_planos/lista.html",
+      "file": "templates/pages/viagens_planos/lista.html",
+      "headers": [
+        "Tipo",
+        "Plano de trabalho",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_planos/resultados.html",
+      "file": "templates/pages/viagens_planos/resultados.html",
+      "headers": [
+        "Atividade",
+        "Meta prevista",
+        "Realizado",
+        "Observação"
+      ],
+      "has_caption": false,
+      "th_scope": true,
+      "responsive_wrapper_hint": true
+    },
+    {
+      "template": "pages/viagens_prestacoes/diario_bordo_form.html",
+      "file": "templates/pages/viagens_prestacoes/diario_bordo_form.html",
+      "headers": [
+        "Origem",
+        "Destino",
+        "Saída",
+        "Km inicial",
+        "Chegada",
+        "Km final",
+        "Abastecimento",
+        "Distância"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": true
+    },
+    {
+      "template": "pages/viagens_roteiros/_como_calculado.html",
+      "file": "templates/pages/viagens_roteiros/_como_calculado.html",
+      "headers": [
+        "Faixa",
+        "Início",
+        "Fim",
+        "Diária",
+        "Qtd.",
+        "Valor unitário",
+        "Subtotal",
+        "Tabela de"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_roteiros/_editor.html",
+      "file": "templates/pages/viagens_roteiros/_editor.html",
+      "headers": [
+        "Origem",
+        "Destino",
+        "Data de saída",
+        "Hora de saída",
+        "Tempo de viagem",
+        "Tempo adicional",
+        "Tempo total",
+        "Data/hora de chegada"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": true
+    },
+    {
+      "template": "pages/viagens_roteiros/_editor.html",
+      "file": "templates/pages/viagens_roteiros/_editor.html",
+      "headers": [],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_roteiros/lista.html",
+      "file": "templates/pages/viagens_roteiros/lista.html",
+      "headers": [
+        "Tipo",
+        "Roteiro",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_termos/form.html",
+      "file": "templates/pages/viagens_termos/form.html",
+      "headers": [
+        "Documento",
+        "Estado",
+        "Ações"
+      ],
+      "has_caption": true,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_termos/lista.html",
+      "file": "templates/pages/viagens_termos/lista.html",
+      "headers": [
+        "Tipo",
+        "Termo",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_2.html",
+      "file": "templates/pages/viagens_viagem/_etapa_2.html",
+      "headers": [
+        "Tipo",
+        "Roteiro",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_3.html",
+      "file": "templates/pages/viagens_viagem/_etapa_3.html",
+      "headers": [
+        "Tipo",
+        "Ofício",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_4.html",
+      "file": "templates/pages/viagens_viagem/_etapa_4.html",
+      "headers": [
+        "Tipo",
+        "Documento de solicitação",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_4.html",
+      "file": "templates/pages/viagens_viagem/_etapa_4.html",
+      "headers": [
+        "Tipo",
+        "Plano de trabalho",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_4.html",
+      "file": "templates/pages/viagens_viagem/_etapa_4.html",
+      "headers": [
+        "Tipo",
+        "Ordem de Serviço",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_viagem/_etapa_5.html",
+      "file": "templates/pages/viagens_viagem/_etapa_5.html",
+      "headers": [
+        "Tipo",
+        "Termo",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    },
+    {
+      "template": "pages/viagens_viagem/lista.html",
+      "file": "templates/pages/viagens_viagem/lista.html",
+      "headers": [
+        "Tipo",
+        "Viagem",
+        "Ações"
+      ],
+      "has_caption": false,
+      "th_scope": false,
+      "responsive_wrapper_hint": false
+    }
+  ]
+}
