@@ -84,6 +84,12 @@ export function registerAgentOps(server: McpServer) {
     return ok({ report: rel(file), summary: f.summary, findings: f.findings.length, inspection: { template: insp.template, components: insp.components } });
   });
 
+  T("report_command_center", "Consolida saúde, testes, a11y, responsivo, desempenho, segurança, dívidas, migração e problemas no contrato do Command Center (reports/agent/command-center.json).", {}, async () => {
+    const r = await run(pythonExec(), [path.join(ROOT, "scripts/agent/command_center.py")]);
+    if (r.code !== 0) throw new Error(r.stderr.slice(-1000));
+    return ok({ ...JSON.parse(r.stdout.trim().split("\n").at(-1)!), data: readJson("reports/agent/command-center.json") });
+  });
+
   // ---- meta do agente
   T("agent_list_skills", "Skills do projeto (.claude/skills) com descrição.", {}, async () => {
     const d = path.join(ROOT, ".claude/skills");

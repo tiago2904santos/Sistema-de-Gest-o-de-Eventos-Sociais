@@ -20,3 +20,5 @@ Relatórios completos: `reports/audit/static-findings.md` (estático) e `docs/au
 | KP-11 | P3 | MAINTAINABILITY | 127 páginas sem estado de erro detectável e 130 sem estado vazio (heurística) | `ui-inventory/states.json` |
 | KP-12 | P3 | UX | Linha de lista não clicável (UX-01 da auditoria manual) | `docs/auditoria-pratica-2026-09-29.md` |
 | KP-14 | P3 | VISUAL | Botão com rótulo longo não quebra nem trunca: vaza do contêiner (`components/v32/button.html`) | UI Lab `/_lab/c/button-long/` |
+| KP-15 | P3 | SECURITY | Achados antigos do bandit para triagem: caractere de controle bidi em `core/leitura/mensagem.py:2001` (B613), Jinja do docxtpl com `autoescape` desligado (B701, `documentos/services/adapters/docxtpl_render.py:27`), MD5/SHA1 sem `usedforsecurity=False` (B324) | `tests/security/bandit-baseline.json` |
+| KP-16 | P3 | PERFORMANCE | Lista de ofícios (25 linhas): 6.872 nós, 970 interativos e **206 `<form>`** — ~8 formulários por linha nos menus de ação | `browser_inspect_dom` no self-test (`reports/agent/self-test.md`) |

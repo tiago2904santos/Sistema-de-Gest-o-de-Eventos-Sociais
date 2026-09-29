@@ -10,6 +10,13 @@ Leia também [`AGENTS.md`](AGENTS.md) (regras comuns a qualquer agente).
 2. `docs/agent/memory/` — decisões, descobertas, correções, problemas conhecidos, padrões aprovados/rejeitados.
 3. `ui-inventory/summary.json` e o arquivo do tema (`routes.json`, `entities.json`, `components.json`…).
 4. A skill do tipo de tarefa em `.claude/skills/` e, se for delegar, o agente em `.claude/agents/`.
+5. O pipeline da missão (`docs/agent/workflows.md`; `agent_get_pipeline`) e a política de ferramentas (`docs/agent/tool-selection-policy.md`).
+
+## MCP do projeto
+
+`.mcp.json` registra o **project-mcp** (106 ferramentas: `project_`, `inventory_`, `lab_`, `testing_`, `browser_`, `audit_`,
+`knowledge_`, `git_`, `report_`, `db_`, `api_`, `obs_`, `agent_`). Comece por `project_inspect_project` e `knowledge_search`.
+Guia: `docs/agent/mcp.md`. Sem MCP, os mesmos dados vêm de `python scripts/agent/lab.py manage agent_query …`.
 
 ## Comandos essenciais
 
@@ -17,6 +24,10 @@ Leia também [`AGENTS.md`](AGENTS.md) (regras comuns a qualquer agente).
 |---|---|
 | Preparar tudo (idempotente) | `npm run agent:bootstrap` (ou `python scripts/agent/lab.py bootstrap`) |
 | Saúde do ambiente | `npm run agent:health` → `reports/agent-health.md` |
+| Diagnóstico / auto-recuperação | `npm run agent:doctor` · `npm run agent:doctor:fix` |
+| Prova ponta a ponta (via MCP) | `npm run agent:self-test` |
+| Segurança (bandit, check --deploy, audits) | `npm run agent:security` |
+| Painel (dados) | `npm run agent:command-center` |
 | Subir o laboratório | `npm run agent:serve` → http://127.0.0.1:8031/_lab/ |
 | Estado previsível | `npm run agent:reset -- --scenario normal` (empty, small, normal, large, very_large, edge_case, long_text, missing_data, invalid_data) |
 | Inventário / dependências / auditoria estática | `npm run agent:inventory` · `agent:depgraph` · `agent:audit` |

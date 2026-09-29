@@ -1,16 +1,33 @@
 name: Laboratório do agente
 
+# Três trilhas:
+#   fast    — todo push/PR: lint crítico, formatação, tipos, tokens, SAST (catraca), check --deploy,
+#             testes do agent_lab, MCP sanity, Playwright smoke/e2e/regression/a11y.
+#   full    — push na main e manual: + responsive, visual, perf, self-test do agente.
+#   nightly — agendado: full + dependências (pip-audit/npm audit), segredos, drift de docs,
+#             contratos de API, relatório de regressão.
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      trilha:
+        description: "fast | full | nightly"
+        default: full
+  schedule:
+    - cron: "17 6 * * *" # 03:17 em Brasília
 
 concurrency:
-  group: agent-lab-${{ github.ref }}
+  group: agent-lab-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
+
+env:
+  PYTHONUTF8: "1"
+  TRILHA: ${{ github.event_name == 'schedule' && 'nightly' || (github.event_name == 'workflow_dispatch' && inputs.trilha) || (github.ref == 'refs/heads/main' && 'full') || 'fast' }}
 
 jobs:
   qualidade:
-    name: Qualidade (lint crítico, formatação, tokens, tipos)
+    name: Qualidade (lint, formato, tipos, tokens, SAST, deploy)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,23 +35,25 @@ jobs:
         with: { python-version: "3.14", cache: pip }
       - uses: actions/setup-node@v4
         with: { node-version: "22", cache: npm }
-      - run: pip install -r requirements-dev.txt
-      - name: Ruff — só erros que quebram em runtime (portão)
-        run: ruff check --select E9,F63,F7,F82 .
-      - name: Ruff — relatório completo (não bloqueia)
-        run: ruff check --exit-zero --statistics .
-      - name: Formatação do código novo
-        run: ruff format --check agent_lab scripts/agent
-      - name: Tokens compilados em dia
-        run: python scripts/agent/build_tokens.py --check
+      - run: python -m venv .venv && .venv/bin/pip install -q -r requirements.txt -r requirements-dev.txt
       - run: npm ci
-      - name: TypeScript (strict) dos testes
+      - name: Ruff — erros que quebram em runtime (portão)
+        run: .venv/bin/ruff check --select E9,F63,F7,F82 .
+      - name: Ruff — relatório completo (informativo)
+        run: .venv/bin/ruff check --exit-zero --statistics .
+      - name: Formatação do código do agente
+        run: .venv/bin/ruff format --check agent_lab scripts/agent
+      - name: Tokens compilados em dia
+        run: .venv/bin/python scripts/agent/build_tokens.py --check
+      - name: TypeScript strict (testes + project-mcp)
         run: npm run typecheck
+      - name: Segurança — bandit (catraca) + check --deploy
+        run: node scripts/agent/run.mjs security
 
   lab-django:
-    name: Testes do agent_lab (SQLite)
+    name: Testes do agent_lab
     runs-on: ubuntu-latest
-    env: { PYTHONUTF8: "1", AGENT_LAB: "1" }
+    env: { AGENT_LAB: "1" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,40 +61,60 @@ jobs:
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: python manage.py test agent_lab --noinput -v 2
 
-  navegador:
-    name: Playwright (smoke, e2e, regressão, a11y, responsivo)
+  mcp-e-navegador:
+    name: MCP sanity + Playwright (${{ github.event_name == 'schedule' && 'nightly' || 'fast/full' }})
     runs-on: ubuntu-latest
-    env: { PYTHONUTF8: "1", CI: "1" }
+    env: { CI: "1" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.14", cache: pip }
       - uses: actions/setup-node@v4
         with: { node-version: "22", cache: npm }
-      - run: python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
+      - run: python -m venv .venv && .venv/bin/pip install -q -r requirements.txt -r requirements-dev.txt
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - run: node scripts/agent/run.mjs reset --scenario normal
       - run: node scripts/agent/run.mjs inventory
-      - name: Testes bloqueantes
-        run: npx playwright test --project=smoke --project=e2e --project=regression --project=a11y --project=responsive
+      - name: MCP sanity (handshake + chamada real)
+        run: npm run mcp:sanity
+      - name: Doctor (rápido)
+        run: node scripts/agent/run.mjs doctor --quick
+      - name: Playwright — trilha fast (bloqueante)
+        run: npx playwright test --project=smoke --project=e2e --project=regression --project=a11y
+      - name: Playwright — responsive (full/nightly)
+        if: env.TRILHA != 'fast'
+        run: npx playwright test --project=responsive
       - name: Visual (informativo até existir baseline gerado no runner)
-        if: always()
+        if: env.TRILHA != 'fast'
         continue-on-error: true
         run: npx playwright test --project=visual
+      - name: Desempenho (informativo)
+        if: env.TRILHA != 'fast'
+        continue-on-error: true
+        run: npx playwright test --project=perf
+      - name: Self-test do agente via MCP
+        if: env.TRILHA != 'fast'
+        run: npm run agent:self-test
+      - name: Contratos de API
+        if: env.TRILHA == 'nightly'
+        run: node scripts/agent/run.mjs manage agent_api --check
       - name: Resumos
         if: always()
         run: |
           node tests/tools/summarize.mjs a11y || true
           node tests/tools/summarize.mjs responsive || true
+          node tests/tools/summarize.mjs perf || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: relatorios-laboratorio
+          name: relatorios-${{ github.run_id }}
           path: reports/
           retention-days: 14
 
-  seguranca:
-    name: Segurança (segredos e dependências)
+  nightly-seguranca:
+    name: Nightly — dependências, segredos, drift
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.trilha == 'nightly')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -85,11 +124,17 @@ jobs:
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
       - uses: actions/setup-python@v5
         with: { python-version: "3.14", cache: pip }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: python -m venv .venv && .venv/bin/pip install -q -r requirements.txt -r requirements-dev.txt && npm ci
       - name: pip-audit (informativo)
         continue-on-error: true
-        run: pip install pip-audit && pip-audit -r requirements.txt
-      - uses: actions/setup-node@v4
-        with: { node-version: "22" }
+        run: .venv/bin/pip-audit -r requirements.txt
       - name: npm audit (informativo)
         continue-on-error: true
         run: npm audit --audit-level=high
+      - name: Drift de documentação e ferramentas mortas
+        run: node scripts/agent/run.mjs doctor --quick || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: doctor-nightly, path: reports/agent/ }

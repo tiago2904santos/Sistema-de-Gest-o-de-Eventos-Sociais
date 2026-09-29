@@ -2,7 +2,7 @@
 
 | Área | Comece por |
 |---|---|
-| Agente (como trabalhar aqui) | [agent/lab-guide.md](agent/lab-guide.md), [agent/BOOTSTRAP-REPORT.md](agent/BOOTSTRAP-REPORT.md), [agent/memory/](agent/memory/README.md) |
+| Agente (como trabalhar aqui) | [agent/architecture.md](agent/architecture.md), [agent/lab-guide.md](agent/lab-guide.md), [agent/mcp.md](agent/mcp.md), [agent/workflows.md](agent/workflows.md), [agent/tooling.md](agent/tooling.md), [agent/troubleshooting.md](agent/troubleshooting.md), [agent/memory/](agent/memory/README.md), [agent/ULTRA-AGENT-REPORT.md](agent/ULTRA-AGENT-REPORT.md) |
 | Arquitetura | [architecture/README.md](architecture/README.md) · [ADR 0001](architecture/adr/0001-arquitetura-alvo.md) · [matriz de migração](architecture/migration-matrix.md) |
 | Produto | [product/modules.md](product/modules.md) · [PLANO_MESTRE_UNIFICACAO.md](PLANO_MESTRE_UNIFICACAO.md) |
 | Design System | [design-system/README.md](design-system/README.md) · tokens em `../tokens/` |

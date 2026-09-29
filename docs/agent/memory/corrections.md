@@ -13,3 +13,5 @@
 - **2026-09-29 · `git fetch` na cópia Windows disparou `gc --auto`** e deixou `.git/gc.log.lock` e `.git/gc.pid` órfãos (removidos).
   **Regra**: na pasta montada, sempre `git -c core.autocrlf=true -c gc.auto=0 -c maintenance.auto=false …` e conferir `ls .git/*.lock .git/gc.pid` no fim.
 - **2026-09-29 · Entrega sem push**: a branch vai por `git bundle` → `git fetch <bundle> agent/x:agent/x` na cópia do usuário (só cria a ref; não toca índice nem arquivos).
+- **2026-09-29 · Missão 2: o reset do SQLite não apagava o arquivo** (a trava passou a devolver "nome [AMBIENTE]" e o `unlink` recebia esse texto com `missing_ok=True`). Seeds acumulavam (25 → 75 → 100 ofícios) e o visual quebrava. Corrigido (caminho vem de `connection.settings_dict`) + check de volume no doctor.
+- **2026-09-29 · A trava antiga liberava reset de QUALQUER SQLite** — inclusive o `db.sqlite3` do dev. Substituída pela classificação de ambiente com marca interna.

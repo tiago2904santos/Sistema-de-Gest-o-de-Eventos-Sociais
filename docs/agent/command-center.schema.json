@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "command-center.schema.json",
+  "title": "UI Command Center — contrato de dados",
+  "description": "Gerado por scripts/agent/command_center.py (npm run agent:command-center ou report_command_center). Cada bloco aponta a fonte e quando foi gerada; 'missing' quando a fonte ainda não existe.",
+  "type": "object",
+  "required": [
+    "generated_at",
+    "agent_health",
+    "tool_health",
+    "mcp_health",
+    "plugin_health",
+    "test_health",
+    "page_coverage",
+    "component_coverage",
+    "accessibility",
+    "visual_regression",
+    "responsive",
+    "performance",
+    "security",
+    "ux_debt",
+    "technical_debt",
+    "migration_status",
+    "known_problems",
+    "top_problems"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string"
+    },
+    "agent_health": {
+      "$ref": "#/$defs/bloco"
+    },
+    "tool_health": {
+      "$ref": "#/$defs/bloco"
+    },
+    "mcp_health": {
+      "$ref": "#/$defs/bloco"
+    },
+    "plugin_health": {
+      "$ref": "#/$defs/bloco"
+    },
+    "test_health": {
+      "$ref": "#/$defs/bloco"
+    },
+    "page_coverage": {
+      "$ref": "#/$defs/bloco"
+    },
+    "component_coverage": {
+      "$ref": "#/$defs/bloco"
+    },
+    "accessibility": {
+      "$ref": "#/$defs/bloco"
+    },
+    "visual_regression": {
+      "$ref": "#/$defs/bloco"
+    },
+    "responsive": {
+      "$ref": "#/$defs/bloco"
+    },
+    "performance": {
+      "$ref": "#/$defs/bloco"
+    },
+    "security": {
+      "$ref": "#/$defs/bloco"
+    },
+    "ux_debt": {
+      "$ref": "#/$defs/bloco"
+    },
+    "technical_debt": {
+      "$ref": "#/$defs/bloco"
+    },
+    "migration_status": {
+      "$ref": "#/$defs/bloco"
+    },
+    "known_problems": {
+      "$ref": "#/$defs/bloco"
+    },
+    "top_problems": {
+      "$ref": "#/$defs/bloco"
+    }
+  },
+  "$defs": {
+    "bloco": {
+      "type": "object",
+      "required": [
+        "source",
+        "generated_at",
+        "missing",
+        "data"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "missing": {
+          "type": "boolean"
+        },
+        "data": {}
+      }
+    }
+  }
+}

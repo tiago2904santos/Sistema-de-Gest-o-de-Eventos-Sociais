@@ -39,7 +39,8 @@
     "agent:doctor:fix": "node scripts/agent/run.mjs doctor --fix",
     "agent:self-test": "tsx tools/project-mcp/test/selftest.ts",
     "mcp:project": "tsx tools/project-mcp/src/server.ts",
-    "mcp:sanity": "tsx tools/project-mcp/test/handshake.ts"
+    "mcp:sanity": "tsx tools/project-mcp/test/handshake.ts",
+    "agent:command-center": "node scripts/agent/run.mjs command-center"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",

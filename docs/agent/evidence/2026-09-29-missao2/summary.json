@@ -1,0 +1,34 @@
+{
+  "bandit": {
+    "ok": true,
+    "new_findings": 2,
+    "new_high_medium": []
+  },
+  "check_deploy": {
+    "ok": true,
+    "output": "System check identified no issues (0 silenced)."
+  },
+  "pip_audit": {
+    "ok": false,
+    "vulnerable": [
+      {
+        "name": "weasyprint",
+        "version": "69.0",
+        "vulns": [
+          "PYSEC-2026-3940"
+        ]
+      }
+    ]
+  },
+  "npm_audit": {
+    "ok": true,
+    "counts": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  }
+}

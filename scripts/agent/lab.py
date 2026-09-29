@@ -199,6 +199,7 @@ def cmd_security(a):
     """SAST (bandit, catraca por baseline), check --deploy, pip-audit e npm audit → reports/security/."""
     out = REPORTS / "security"
     out.mkdir(parents=True, exist_ok=True)
+    LAB_DIR.mkdir(exist_ok=True)
     bin_ = Path(python_exec()).parent
     res = {}
     excl = "./.venv,./node_modules,./tests,./agent_lab,./tools,*/tests,*/migrations"
@@ -269,6 +270,10 @@ def cmd_security(a):
     # Portão: bandit sem achado novo HIGH/MEDIUM e check --deploy limpo. Vulnerabilidade de
     # dependência é relatório (a correção pode exigir validar documentos — KP-13).
     sys.exit(0 if res["bandit"]["ok"] and res["check_deploy"]["ok"] else 1)
+
+
+def cmd_command_center(_a):
+    sys.exit(subprocess.call([python_exec(), str(RAIZ / "scripts" / "agent" / "command_center.py")], cwd=RAIZ))
 
 
 def cmd_doctor(a):
@@ -616,7 +621,7 @@ def main():
     dr.add_argument("args", nargs=argparse.REMAINDER)
     mg = sub.add_parser("manage", help="manage.py com o ambiente do laboratório")
     mg.add_argument("args", nargs=argparse.REMAINDER)
-    for nome in ("inventory", "depgraph", "audit", "db-audit", "tokens", "security", "env"):
+    for nome in ("inventory", "depgraph", "audit", "db-audit", "tokens", "security", "command-center", "env"):
         sub.add_parser(nome)
     a = p.parse_args()
     {
@@ -632,6 +637,7 @@ def main():
         "tokens": cmd_tokens,
         "security": cmd_security,
         "doctor": cmd_doctor,
+        "command-center": cmd_command_center,
         "manage": cmd_manage,
         "env": cmd_env,
     }[a.cmd](a)

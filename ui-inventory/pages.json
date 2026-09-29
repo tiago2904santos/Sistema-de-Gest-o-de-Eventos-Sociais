@@ -5535,7 +5535,7 @@
     {
       "template": "agent_lab/_head.html",
       "file": "agent_lab/templates/agent_lab/_head.html",
-      "lines": 23,
+      "lines": 24,
       "extends": [],
       "includes": [],
       "blocks": [
@@ -5553,7 +5553,7 @@
       "has_form": false,
       "has_dialog": false,
       "has_empty_state": false,
-      "sha1_normalized": "687095463e941cec6fc82d07d553f77c84a42aa8"
+      "sha1_normalized": "6f310c87a2464032fc68cc69209822f41e708325"
     },
     {
       "template": "agent_lab/index.html",

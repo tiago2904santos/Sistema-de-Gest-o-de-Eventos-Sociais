@@ -1,0 +1,1004 @@
+{
+  "generated_at": "2026-09-29T16:01:41",
+  "agent_health": {
+    "source": "reports/agent/health.json",
+    "generated_at": "2026-09-29T16:01:27",
+    "missing": false,
+    "data": {
+      "status": "READY",
+      "failed": []
+    }
+  },
+  "tool_health": {
+    "source": "reports/agent/doctor.json",
+    "generated_at": "2026-09-29T16:01:40",
+    "missing": false,
+    "data": {
+      "status": "HEALTHY",
+      "critical_failures": 0,
+      "warnings": 0,
+      "versions": {
+        "python": "3.14.0rc2",
+        "django": "6.1.1",
+        "node": "v22.22.2",
+        "npm": "10.9.7",
+        "git": "git version 2.43.0",
+        "npm:@axe-core/playwright": "4.10.2",
+        "npm:@modelcontextprotocol/sdk": "1.31.0",
+        "npm:@playwright/test": "1.56.0",
+        "npm:@types/node": "22.10.2",
+        "npm:@types/pngjs": "6.0.5",
+        "npm:pixelmatch": "7.1.0",
+        "npm:pngjs": "7.0.0",
+        "npm:tsx": "4.23.15",
+        "npm:typescript": "5.7.2",
+        "npm:zod": "3.25.76",
+        "ruff": "ruff 0.16.9",
+        "bandit": "bandit 1.9.4",
+        "pip-audit": "pip-audit 2.10.1",
+        "chromium": "141.0.7390.37",
+        "project-mcp tools": 106
+      }
+    }
+  },
+  "mcp_health": {
+    "source": "reports/agent/self-test.json",
+    "generated_at": "2026-09-29T15:50:32",
+    "missing": false,
+    "data": {
+      "ok": true,
+      "tools": 106,
+      "steps_ok": 19,
+      "steps": 19
+    }
+  },
+  "plugin_health": {
+    "source": "docs/agent/tool-registry.json",
+    "generated_at": "2026-09-29T15:22:13",
+    "missing": false,
+    "data": {
+      "READY": 41,
+      "UNAVAILABLE": 9,
+      "REQUIRES_MANUAL_CONNECTION": 4
+    }
+  },
+  "test_health": {
+    "source": "reports/testing/playwright-results.json",
+    "generated_at": "2026-09-29T15:47:48",
+    "missing": false,
+    "data": {
+      "startTime": "2026-09-29T18:43:13.985Z",
+      "duration": 273164.783,
+      "expected": 220,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "page_coverage": {
+    "source": "ui-inventory/routes.json",
+    "generated_at": "2026-09-29T14:16:22",
+    "missing": false,
+    "data": {
+      "pages_with_route": 52,
+      "audited": 1,
+      "not_audited_sample": [
+        "/",
+        "/_lab/",
+        "/agenda/",
+        "/agenda/escala/",
+        "/ascom/imprensa/",
+        "/ascom/imprensa/atendimentos/",
+        "/ascom/imprensa/atendimentos/novo/",
+        "/ascom/palestras/",
+        "/ascom/palestras/lista/",
+        "/ascom/palestras/nova/",
+        "/ascom/publicacoes/",
+        "/ascom/publicacoes/pautas/",
+        "/ascom/publicacoes/pautas/nova/",
+        "/cadastros/",
+        "/coffee-break/",
+        "/coffee-break/cadastros/importar-planilha/",
+        "/coffee-break/certidoes/",
+        "/coffee-break/lotes/",
+        "/coffee-break/lotes/virada-de-exercicio/",
+        "/coffee-break/solicitacoes/",
+        "/coffee-break/solicitacoes/nova/",
+        "/coffee-break/solicitacoes/nova/ordem-de-servico/",
+        "/conta/alterar-senha/",
+        "/conta/entrar/",
+        "/conta/sair/",
+        "/conta/senha/recuperar/",
+        "/conta/senha/recuperar/concluido/",
+        "/conta/senha/recuperar/enviado/",
+        "/conta/usuarios/",
+        "/conta/usuarios/novo/"
+      ]
+    }
+  },
+  "component_coverage": {
+    "source": "ui-inventory/summary.json",
+    "generated_at": "2026-09-29T14:16:23",
+    "missing": false,
+    "data": {
+      "template_components": 40,
+      "specimens_in_lab": 36
+    }
+  },
+  "accessibility": {
+    "source": "reports/accessibility",
+    "generated_at": "2026-09-29T13:45:08",
+    "missing": false,
+    "data": {
+      "pages": 21,
+      "totals": {
+        "critical": 5,
+        "serious": 177,
+        "moderate": 26,
+        "minor": 1
+      },
+      "baseline": {
+        "agenda": {
+          "critical": 5,
+          "serious": 49
+        },
+        "cadastros": {
+          "critical": 0,
+          "serious": 3
+        },
+        "coffee-lista": {
+          "critical": 0,
+          "serious": 3
+        },
+        "dashboard": {
+          "critical": 0,
+          "serious": 3
+        },
+        "erro-404": {
+          "critical": 0,
+          "serious": 4
+        },
+        "hub": {
+          "critical": 0,
+          "serious": 3
+        },
+        "imprensa-lista": {
+          "critical": 0,
+          "serious": 3
+        },
+        "login": {
+          "critical": 0,
+          "serious": 3
+        },
+        "oficios-lista": {
+          "critical": 0,
+          "serious": 3
+        },
+        "ordens-lista": {
+          "critical": 0,
+          "serious": 3
+        },
+        "palestras-lista": {
+          "critical": 0,
+          "serious": 3
+        },
+        "planos-lista": {
+          "critical": 0,
+          "serious": 3
+        },
+        "prestacoes-lista": {
+          "critical": 0,
+          "serious": 52
+        },
+        "publicacoes-lista": {
+          "critical": 0,
+          "serious": 5
+        },
+        "relatorios": {
+          "critical": 0,
+          "serious": 3
+        },
+        "roteiros-lista": {
+          "critical": 0,
+          "serious": 3
+        },
+        "solicitacoes-lista": {
+          "critical": 0,
+          "serious": 5
+        },
+        "solicitacoes-nova": {
+          "critical": 0,
+          "serious": 9
+        },
+        "termos-lista": {
+          "critical": 0,
+          "serious": 3
+        },
+        "viagem-lista": {
+          "critical": 0,
+          "serious": 3
+        },
+        "viagens-cadastros": {
+          "critical": 0,
+          "serious": 11
+        }
+      }
+    }
+  },
+  "visual_regression": {
+    "source": "tests/visual/snapshots",
+    "generated_at": "2026-09-29T13:49:51",
+    "missing": false,
+    "data": {
+      "baselines": 57
+    }
+  },
+  "responsive": {
+    "source": "reports/responsive",
+    "generated_at": "2026-09-29T13:53:14",
+    "missing": false,
+    "data": {
+      "combinations": 120,
+      "overflow": [
+        "agenda@mobile",
+        "agenda@mobilePequeno",
+        "dashboard@mobile",
+        "dashboard@mobilePequeno",
+        "oficios-lista@mobile",
+        "oficios-lista@tabletRetrato",
+        "oficios-lista@tablet",
+        "oficios-lista@laptop",
+        "oficios-lista@desktop",
+        "oficios-lista@mobilePequeno",
+        "ordens-lista@tabletRetrato",
+        "ordens-lista@tablet",
+        "ordens-lista@laptop",
+        "ordens-lista@desktop",
+        "planos-lista@tabletRetrato",
+        "planos-lista@tablet",
+        "planos-lista@laptop",
+        "planos-lista@desktop",
+        "prestacoes-lista@mobile",
+        "prestacoes-lista@tabletRetrato",
+        "prestacoes-lista@tablet",
+        "prestacoes-lista@laptop",
+        "prestacoes-lista@desktop",
+        "prestacoes-lista@mobilePequeno",
+        "roteiros-lista@tabletRetrato",
+        "roteiros-lista@tablet",
+        "roteiros-lista@laptop",
+        "roteiros-lista@desktop",
+        "termos-lista@tabletRetrato",
+        "termos-lista@tablet",
+        "termos-lista@laptop",
+        "termos-lista@desktop",
+        "viagem-lista@tabletRetrato",
+        "viagem-lista@tablet",
+        "viagem-lista@laptop",
+        "viagem-lista@desktop",
+        "viagens-cadastros@tabletRetrato",
+        "viagens-cadastros@tablet",
+        "viagens-cadastros@laptop",
+        "viagens-cadastros@desktop"
+      ]
+    }
+  },
+  "performance": {
+    "source": "reports/performance",
+    "generated_at": "2026-09-29T13:56:57",
+    "missing": false,
+    "data": [
+      {
+        "page": "agenda",
+        "ttfbMs": 34,
+        "lcpMs": 284,
+        "cls": 0.014,
+        "htmlKB": 25,
+        "requests": 16
+      },
+      {
+        "page": "cadastros",
+        "ttfbMs": 19,
+        "lcpMs": 224,
+        "cls": 0,
+        "htmlKB": 14,
+        "requests": 6
+      },
+      {
+        "page": "coffee-lista",
+        "ttfbMs": 72,
+        "lcpMs": 328,
+        "cls": 0,
+        "htmlKB": 187,
+        "requests": 7
+      },
+      {
+        "page": "dashboard",
+        "ttfbMs": 37,
+        "lcpMs": 328,
+        "cls": 0,
+        "htmlKB": 80,
+        "requests": 6
+      },
+      {
+        "page": "hub",
+        "ttfbMs": 148,
+        "lcpMs": 400,
+        "cls": 0,
+        "htmlKB": 29,
+        "requests": 7
+      },
+      {
+        "page": "imprensa-lista",
+        "ttfbMs": 37,
+        "lcpMs": 240,
+        "cls": 0,
+        "htmlKB": 141,
+        "requests": 6
+      },
+      {
+        "page": "login",
+        "ttfbMs": 149,
+        "lcpMs": 396,
+        "cls": 0,
+        "htmlKB": 29,
+        "requests": 7
+      },
+      {
+        "page": "oficios-lista",
+        "ttfbMs": 173,
+        "lcpMs": 424,
+        "cls": 0,
+        "htmlKB": 496,
+        "requests": 10
+      },
+      {
+        "page": "ordens-lista",
+        "ttfbMs": 33,
+        "lcpMs": 216,
+        "cls": 0,
+        "htmlKB": 21,
+        "requests": 9
+      },
+      {
+        "page": "palestras-lista",
+        "ttfbMs": 24,
+        "lcpMs": 272,
+        "cls": 0,
+        "htmlKB": 10,
+        "requests": 6
+      },
+      {
+        "page": "planos-lista",
+        "ttfbMs": 40,
+        "lcpMs": 256,
+        "cls": 0,
+        "htmlKB": 18,
+        "requests": 8
+      },
+      {
+        "page": "prestacoes-lista",
+        "ttfbMs": 321,
+        "lcpMs": 656,
+        "cls": 0,
+        "htmlKB": 656,
+        "requests": 11
+      },
+      {
+        "page": "publicacoes-lista",
+        "ttfbMs": 33,
+        "lcpMs": 188,
+        "cls": 0,
+        "htmlKB": 82,
+        "requests": 6
+      },
+      {
+        "page": "relatorios",
+        "ttfbMs": 25,
+        "lcpMs": 212,
+        "cls": 0,
+        "htmlKB": 18,
+        "requests": 6
+      },
+      {
+        "page": "roteiros-lista",
+        "ttfbMs": 72,
+        "lcpMs": 348,
+        "cls": 0,
+        "htmlKB": 196,
+        "requests": 7
+      },
+      {
+        "page": "solicitacoes-lista",
+        "ttfbMs": 126,
+        "lcpMs": 452,
+        "cls": 0,
+        "htmlKB": 301,
+        "requests": 7
+      },
+      {
+        "page": "solicitacoes-nova",
+        "ttfbMs": 43,
+        "lcpMs": 344,
+        "cls": 0,
+        "htmlKB": 75,
+        "requests": 12
+      },
+      {
+        "page": "termos-lista",
+        "ttfbMs": 36,
+        "lcpMs": 200,
+        "cls": 0,
+        "htmlKB": 27,
+        "requests": 10
+      },
+      {
+        "page": "viagem-lista",
+        "ttfbMs": 53,
+        "lcpMs": 236,
+        "cls": 0,
+        "htmlKB": 19,
+        "requests": 9
+      },
+      {
+        "page": "viagens-cadastros",
+        "ttfbMs": 48,
+        "lcpMs": 328,
+        "cls": 0,
+        "htmlKB": 141,
+        "requests": 12
+      }
+    ]
+  },
+  "security": {
+    "source": "reports/security/summary.json",
+    "generated_at": "2026-09-29T15:52:13",
+    "missing": false,
+    "data": {
+      "bandit": {
+        "ok": true,
+        "new_findings": 2,
+        "new_high_medium": []
+      },
+      "check_deploy": {
+        "ok": true,
+        "output": "System check identified no issues (0 silenced)."
+      },
+      "pip_audit": {
+        "ok": false,
+        "vulnerable": [
+          {
+            "name": "weasyprint",
+            "version": "69.0",
+            "vulns": [
+              "PYSEC-2026-3940"
+            ]
+          }
+        ]
+      },
+      "npm_audit": {
+        "ok": true,
+        "counts": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 0,
+          "critical": 0,
+          "total": 0
+        }
+      }
+    }
+  },
+  "ux_debt": {
+    "source": "docs/agent/memory/known-problems.md",
+    "generated_at": "2026-09-29T15:42:37",
+    "missing": false,
+    "data": [
+      {
+        "#": "KP-01",
+        "Sev.": "P1",
+        "Categoria": "ACCESSIBILITY",
+        "Problema": "Agenda: 5 violações axe críticas (`aria-allowed-attr`) + 49 sérias",
+        "Evidência": "`reports/accessibility/agenda.json`"
+      },
+      {
+        "#": "KP-02",
+        "Sev.": "P2",
+        "Categoria": "ACCESSIBILITY",
+        "Problema": "Foco do teclado invisível (`:focus-visible{outline:none}` global em `ds-v32.css`)",
+        "Evidência": "`tests/regression/known-bugs.spec.ts` (test.fail)"
+      },
+      {
+        "#": "KP-03",
+        "Sev.": "P2",
+        "Categoria": "ACCESSIBILITY",
+        "Problema": "Contraste: `--n-400` (3,78:1) e `--rotulo` (4,29:1) em texto pequeno; ~3 violações `color-contrast` por página",
+        "Evidência": "`reports/design/contrast.md`, `reports/accessibility/summary.md`"
+      },
+      {
+        "#": "KP-04",
+        "Sev.": "P2",
+        "Categoria": "RESPONSIVE",
+        "Problema": "Navegação do módulo Viagens transborda: rolagem horizontal em 40 combinações página×viewport, inclusive 1440px",
+        "Evidência": "`tests/responsive/baseline.json`"
+      },
+      {
+        "#": "KP-05",
+        "Sev.": "P2",
+        "Categoria": "VISUAL",
+        "Problema": "`pdf-place.css` referencia 13 custom properties inexistentes",
+        "Evidência": "`ui-inventory/tokens.json → used_but_undefined`"
+      },
+      {
+        "#": "KP-12",
+        "Sev.": "P3",
+        "Categoria": "UX",
+        "Problema": "Linha de lista não clicável (UX-01 da auditoria manual)",
+        "Evidência": "`docs/auditoria-pratica-2026-09-29.md`"
+      },
+      {
+        "#": "KP-14",
+        "Sev.": "P3",
+        "Categoria": "VISUAL",
+        "Problema": "Botão com rótulo longo não quebra nem trunca: vaza do contêiner (`components/v32/button.html`)",
+        "Evidência": "UI Lab `/_lab/c/button-long/`"
+      }
+    ]
+  },
+  "technical_debt": {
+    "source": "reports/audit/static-findings.json",
+    "generated_at": "2026-09-29T13:38:23",
+    "missing": false,
+    "data": {
+      "by_category": {
+        "ACCESSIBILITY": 9,
+        "SECURITY": 24,
+        "VISUAL": 13,
+        "ARCHITECTURE": 1,
+        "CONSISTENCY": 6,
+        "MAINTAINABILITY": 5
+      },
+      "by_severity": {
+        "P2": 23,
+        "P3": 23,
+        "P4": 12
+      }
+    }
+  },
+  "migration_status": {
+    "source": "docs/architecture/migration-matrix.md",
+    "generated_at": "2026-09-29T14:05:37",
+    "missing": false,
+    "data": [
+      {
+        "Módulo": "Login / conta (`accounts`)",
+        "Rotas": "11",
+        "Páginas": "7",
+        "Atual": "`auth.html` + design-system.css",
+        "Novo": "auth v4",
+        "Status": "não iniciado",
+        "Risco": "baixo",
+        "Observações medidas": "Piloto ideal: pequeno, sem regra de negócio; 3 violações de contraste"
+      },
+      {
+        "Módulo": "Hub / portal (`core`)",
+        "Rotas": "8",
+        "Páginas": "2",
+        "Atual": "app_shell_v32",
+        "Novo": "app_shell_v4",
+        "Status": "não iniciado",
+        "Risco": "baixo",
+        "Observações medidas": "Define o casco (identidade, navegação de módulos)"
+      },
+      {
+        "Módulo": "Dashboard",
+        "Rotas": "1",
+        "Páginas": "1",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "baixo",
+        "Observações medidas": "Arquétipo DASHBOARD"
+      },
+      {
+        "Módulo": "Relatórios",
+        "Rotas": "2",
+        "Páginas": "1",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "baixo",
+        "Observações medidas": "Arquétipo REPORT"
+      },
+      {
+        "Módulo": "Cadastros gerais (`cadastros`)",
+        "Rotas": "8",
+        "Páginas": "3",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "baixo",
+        "Observações medidas": "CRUD genérico por slug — migra muitas telas de uma vez"
+      },
+      {
+        "Módulo": "Agenda",
+        "Rotas": "7",
+        "Páginas": "2",
+        "Atual": "v32 + FullCalendar + 3 CSS próprios",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "**alto**",
+        "Observações medidas": "5 violações críticas; bug de dia da semana já corrigido"
+      },
+      {
+        "Módulo": "Eventos sociais (`solicitacoes`)",
+        "Rotas": "19",
+        "Páginas": "2",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "médio",
+        "Observações medidas": "Workflow de despacho DG; formulário longo"
+      },
+      {
+        "Módulo": "Coffee Break",
+        "Rotas": "60",
+        "Páginas": "16",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "médio",
+        "Observações medidas": "Links públicos de fornecedor, lotes, pagamento"
+      },
+      {
+        "Módulo": "Palestras (`demandas_eventos`)",
+        "Rotas": "16",
+        "Páginas": "5",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "baixo",
+        "Observações medidas": "Pedido público"
+      },
+      {
+        "Módulo": "Publicações",
+        "Rotas": "12",
+        "Páginas": "3",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "baixo",
+        "Observações medidas": "Lista padrão `lista_registros`"
+      },
+      {
+        "Módulo": "Atendimento à imprensa",
+        "Rotas": "12",
+        "Páginas": "3",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "baixo",
+        "Observações medidas": "Lista padrão `lista_registros`"
+      },
+      {
+        "Módulo": "Viagens — navegação do módulo",
+        "Rotas": "—",
+        "Páginas": "—",
+        "Atual": "nav-mod 12 itens",
+        "Novo": "nav v4 com agrupamento",
+        "Status": "não iniciado",
+        "Risco": "médio",
+        "Observações medidas": "Causa o overflow em 40 combinações (KP-04)"
+      },
+      {
+        "Módulo": "Viagens — cadastros",
+        "Rotas": "11",
+        "Páginas": "5",
+        "Atual": "v32 + viagens-cadastros.css",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "baixo",
+        "Observações medidas": ""
+      },
+      {
+        "Módulo": "Viagens — roteiros",
+        "Rotas": "14",
+        "Páginas": "2",
+        "Atual": "v32 + roteiro-editor.js (1,8 mil linhas) + Leaflet",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "**alto**",
+        "Observações medidas": "Cálculo de diárias (dinheiro)"
+      },
+      {
+        "Módulo": "Viagens — ofícios / justificativas",
+        "Rotas": "29",
+        "Páginas": "6",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "**alto**",
+        "Observações medidas": "Numeração oficial, eProtocolo, documentos"
+      },
+      {
+        "Módulo": "Viagens — termos",
+        "Rotas": "12",
+        "Páginas": "3",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "médio",
+        "Observações medidas": "Documentos"
+      },
+      {
+        "Módulo": "Viagens — viagem",
+        "Rotas": "13",
+        "Páginas": "3",
+        "Atual": "v32 + viagens-viagem.css",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "médio",
+        "Observações medidas": ""
+      },
+      {
+        "Módulo": "Viagens — ordens de serviço",
+        "Rotas": "8",
+        "Páginas": "2",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "médio",
+        "Observações medidas": "Documentos"
+      },
+      {
+        "Módulo": "Viagens — planos de trabalho",
+        "Rotas": "12",
+        "Páginas": "3",
+        "Atual": "v32 + viagens-planos.css",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "médio",
+        "Observações medidas": "Documentos"
+      },
+      {
+        "Módulo": "Viagens — prestações",
+        "Rotas": "64",
+        "Páginas": "9",
+        "Atual": "v32",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "**alto**",
+        "Observações medidas": "Maior módulo; lista com 656 KB de HTML; assinatura por link"
+      },
+      {
+        "Módulo": "Diário de campo (PWA)",
+        "Rotas": "4",
+        "Páginas": "2",
+        "Atual": "próprio",
+        "Novo": "v4 mobile",
+        "Status": "não iniciado",
+        "Risco": "médio",
+        "Observações medidas": "Offline/Service Worker"
+      },
+      {
+        "Módulo": "Editor de documentos (`documentos`)",
+        "Rotas": "23",
+        "Páginas": "1",
+        "Atual": "v32 + documento-editor.js",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "**alto**",
+        "Observações medidas": "Concorrência de edição, versões"
+      },
+      {
+        "Módulo": "Páginas públicas (pedido, fornecedor)",
+        "Rotas": "4",
+        "Páginas": "5",
+        "Atual": "`auth.html`",
+        "Novo": "público v4",
+        "Status": "não iniciado",
+        "Risco": "médio",
+        "Observações medidas": "Sem login; limite por IP"
+      },
+      {
+        "Módulo": "Páginas de erro 403/404/500",
+        "Rotas": "—",
+        "Páginas": "3",
+        "Atual": "próprias",
+        "Novo": "v4",
+        "Status": "não iniciado",
+        "Risco": "baixo",
+        "Observações medidas": "Prévia em `/_lab/erro/<código>/`"
+      }
+    ]
+  },
+  "known_problems": {
+    "source": "docs/agent/memory/known-problems.md",
+    "generated_at": "2026-09-29T15:42:37",
+    "missing": false,
+    "data": [
+      {
+        "#": "KP-00",
+        "Sev.": "**P1**",
+        "Categoria": "FUNCTIONAL (perda de dado)",
+        "Problema": "Excluir um servidor pela tela (`POST /viagens/cadastros/servidores/<pk>/excluir/`) apaga em silêncio as prestações de contas dele: `PrestacaoServidor.servidor` é CASCADE e `_dependencias_protegidas` só considera PROTECT/RESTRICT. Reproduzido no lab (2 prestações → 0).",
+        "Evidência": "`agent_lab/test_known_bugs.py` (expectedFailure), `reports/data/db-audit.md`"
+      },
+      {
+        "#": "KP-01",
+        "Sev.": "P1",
+        "Categoria": "ACCESSIBILITY",
+        "Problema": "Agenda: 5 violações axe críticas (`aria-allowed-attr`) + 49 sérias",
+        "Evidência": "`reports/accessibility/agenda.json`"
+      },
+      {
+        "#": "KP-02",
+        "Sev.": "P2",
+        "Categoria": "ACCESSIBILITY",
+        "Problema": "Foco do teclado invisível (`:focus-visible{outline:none}` global em `ds-v32.css`)",
+        "Evidência": "`tests/regression/known-bugs.spec.ts` (test.fail)"
+      },
+      {
+        "#": "KP-03",
+        "Sev.": "P2",
+        "Categoria": "ACCESSIBILITY",
+        "Problema": "Contraste: `--n-400` (3,78:1) e `--rotulo` (4,29:1) em texto pequeno; ~3 violações `color-contrast` por página",
+        "Evidência": "`reports/design/contrast.md`, `reports/accessibility/summary.md`"
+      },
+      {
+        "#": "KP-04",
+        "Sev.": "P2",
+        "Categoria": "RESPONSIVE",
+        "Problema": "Navegação do módulo Viagens transborda: rolagem horizontal em 40 combinações página×viewport, inclusive 1440px",
+        "Evidência": "`tests/responsive/baseline.json`"
+      },
+      {
+        "#": "KP-05",
+        "Sev.": "P2",
+        "Categoria": "VISUAL",
+        "Problema": "`pdf-place.css` referencia 13 custom properties inexistentes",
+        "Evidência": "`ui-inventory/tokens.json → used_but_undefined`"
+      },
+      {
+        "#": "KP-06",
+        "Sev.": "P2",
+        "Categoria": "SECURITY",
+        "Problema": "`DEBUG` liga por padrão quando `DJANGO_DEBUG` não existe",
+        "Evidência": "`config/settings.py`"
+      },
+      {
+        "#": "KP-13",
+        "Sev.": "P2",
+        "Categoria": "SECURITY",
+        "Problema": "`weasyprint 69.0` tem vulnerabilidade conhecida (PYSEC-2026-3940), corrigida na 70.0; `requirements.txt` fixa `<70.0`. Avaliar a atualização com os goldens de PDF",
+        "Evidência": "`pip-audit -r requirements.txt`"
+      },
+      {
+        "#": "KP-07",
+        "Sev.": "P3",
+        "Categoria": "PERFORMANCE",
+        "Problema": "Lista de prestações: 656 KB de HTML, 7.394 nós, 52 violações de contraste, `landmark-unique` ×24",
+        "Evidência": "`reports/audit/viagens-prestacoes/`"
+      },
+      {
+        "#": "KP-08",
+        "Sev.": "P3",
+        "Categoria": "CONSISTENCY",
+        "Problema": "DS sem escalas (115 font-sizes, 18 breakpoints, 12+ raios); 3 CSS concorrentes (design-system + ds-v32 + bridge) com 308 seletores duplicados",
+        "Evidência": "`ui-inventory/styles.json`, `duplication-report.json`"
+      },
+      {
+        "#": "KP-09",
+        "Sev.": "P3",
+        "Categoria": "FUNCTIONAL",
+        "Problema": "14 testes falhando no `main` (12 de paginação desatualizados, 2 OCR sem tesseract)",
+        "Evidência": "`docs/agent/BOOTSTRAP-REPORT.md`"
+      },
+      {
+        "#": "KP-10",
+        "Sev.": "P3",
+        "Categoria": "ARCHITECTURE",
+        "Problema": "Ciclo de imports envolvendo 19 apps; `core` depende de apps de domínio",
+        "Evidência": "`reports/architecture/dependency-graph.json`"
+      },
+      {
+        "#": "KP-11",
+        "Sev.": "P3",
+        "Categoria": "MAINTAINABILITY",
+        "Problema": "127 páginas sem estado de erro detectável e 130 sem estado vazio (heurística)",
+        "Evidência": "`ui-inventory/states.json`"
+      },
+      {
+        "#": "KP-12",
+        "Sev.": "P3",
+        "Categoria": "UX",
+        "Problema": "Linha de lista não clicável (UX-01 da auditoria manual)",
+        "Evidência": "`docs/auditoria-pratica-2026-09-29.md`"
+      },
+      {
+        "#": "KP-14",
+        "Sev.": "P3",
+        "Categoria": "VISUAL",
+        "Problema": "Botão com rótulo longo não quebra nem trunca: vaza do contêiner (`components/v32/button.html`)",
+        "Evidência": "UI Lab `/_lab/c/button-long/`"
+      },
+      {
+        "#": "KP-15",
+        "Sev.": "P3",
+        "Categoria": "SECURITY",
+        "Problema": "Achados antigos do bandit para triagem: caractere de controle bidi em `core/leitura/mensagem.py:2001` (B613), Jinja do docxtpl com `autoescape` desligado (B701, `documentos/services/adapters/docxtpl_render.py:27`), MD5/SHA1 sem `usedforsecurity=False` (B324)",
+        "Evidência": "`tests/security/bandit-baseline.json`"
+      },
+      {
+        "#": "KP-16",
+        "Sev.": "P3",
+        "Categoria": "PERFORMANCE",
+        "Problema": "Lista de ofícios (25 linhas): 6.872 nós, 970 interativos e **206 `<form>`** — ~8 formulários por linha nos menus de ação",
+        "Evidência": "`browser_inspect_dom` no self-test (`reports/agent/self-test.md`)"
+      }
+    ]
+  },
+  "top_problems": {
+    "source": "docs/agent/memory/known-problems.md",
+    "generated_at": "2026-09-29T15:42:37",
+    "missing": false,
+    "data": [
+      {
+        "#": "KP-00",
+        "Sev.": "**P1**",
+        "Categoria": "FUNCTIONAL (perda de dado)",
+        "Problema": "Excluir um servidor pela tela (`POST /viagens/cadastros/servidores/<pk>/excluir/`) apaga em silêncio as prestações de contas dele: `PrestacaoServidor.servidor` é CASCADE e `_dependencias_protegidas` só considera PROTECT/RESTRICT. Reproduzido no lab (2 prestações → 0).",
+        "Evidência": "`agent_lab/test_known_bugs.py` (expectedFailure), `reports/data/db-audit.md`"
+      },
+      {
+        "#": "KP-01",
+        "Sev.": "P1",
+        "Categoria": "ACCESSIBILITY",
+        "Problema": "Agenda: 5 violações axe críticas (`aria-allowed-attr`) + 49 sérias",
+        "Evidência": "`reports/accessibility/agenda.json`"
+      },
+      {
+        "#": "KP-02",
+        "Sev.": "P2",
+        "Categoria": "ACCESSIBILITY",
+        "Problema": "Foco do teclado invisível (`:focus-visible{outline:none}` global em `ds-v32.css`)",
+        "Evidência": "`tests/regression/known-bugs.spec.ts` (test.fail)"
+      },
+      {
+        "#": "KP-03",
+        "Sev.": "P2",
+        "Categoria": "ACCESSIBILITY",
+        "Problema": "Contraste: `--n-400` (3,78:1) e `--rotulo` (4,29:1) em texto pequeno; ~3 violações `color-contrast` por página",
+        "Evidência": "`reports/design/contrast.md`, `reports/accessibility/summary.md`"
+      },
+      {
+        "#": "KP-04",
+        "Sev.": "P2",
+        "Categoria": "RESPONSIVE",
+        "Problema": "Navegação do módulo Viagens transborda: rolagem horizontal em 40 combinações página×viewport, inclusive 1440px",
+        "Evidência": "`tests/responsive/baseline.json`"
+      },
+      {
+        "#": "KP-05",
+        "Sev.": "P2",
+        "Categoria": "VISUAL",
+        "Problema": "`pdf-place.css` referencia 13 custom properties inexistentes",
+        "Evidência": "`ui-inventory/tokens.json → used_but_undefined`"
+      },
+      {
+        "#": "KP-06",
+        "Sev.": "P2",
+        "Categoria": "SECURITY",
+        "Problema": "`DEBUG` liga por padrão quando `DJANGO_DEBUG` não existe",
+        "Evidência": "`config/settings.py`"
+      },
+      {
+        "#": "KP-13",
+        "Sev.": "P2",
+        "Categoria": "SECURITY",
+        "Problema": "`weasyprint 69.0` tem vulnerabilidade conhecida (PYSEC-2026-3940), corrigida na 70.0; `requirements.txt` fixa `<70.0`. Avaliar a atualização com os goldens de PDF",
+        "Evidência": "`pip-audit -r requirements.txt`"
+      }
+    ]
+  }
+}

@@ -49,8 +49,10 @@ REPORTS = RAIZ / "reports" / "agent"
 
 def sh(cmd, timeout=180, env=None):
     try:
+        # Sem shell: no Windows npx/npm são .cmd — resolve o caminho completo.
+        exe = shutil.which(cmd[0]) or cmd[0]
         r = subprocess.run(
-            cmd,
+            [exe, *cmd[1:]],
             cwd=RAIZ,
             capture_output=True,
             text=True,
@@ -58,7 +60,6 @@ def sh(cmd, timeout=180, env=None):
             env=env or os.environ,
             encoding="utf-8",
             errors="replace",
-            shell=(os.name == "nt" and cmd[0] in ("npx", "npm")),
         )
         return r.returncode, (r.stdout or "") + (r.stderr or "")
     except (FileNotFoundError, subprocess.TimeoutExpired) as exc:

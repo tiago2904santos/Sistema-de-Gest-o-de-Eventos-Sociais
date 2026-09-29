@@ -1,61 +1,82 @@
 # Inventário de ferramentas do agente
 
-Levantamento feito em 29/09/2026 antes de instalar qualquer coisa. Critério: **capacidade, não
-quantidade** — só entra o que cobre uma lacuna real, de fonte oficial ou amplamente confiável.
+Atualizado na missão 2 (29/09/2026). Registro de máquina: [`tool-registry.json`](tool-registry.json) (54 entradas com
+purpose, source, version, status, risk, dependencies, manual_connection, replacement). Critério: **máxima capacidade com o
+mínimo de redundância** — cada lacuna foi procurada em ferramenta oficial → plugin → MCP → skill → subagente → e só então criada.
 
-## 1. O que o ambiente Claude (Cowork) já oferece
+## Classificação
 
-| Capacidade | Ferramenta | Uso neste projeto |
-|---|---|---|
-| Arquivos e shell na nuvem | Read/Write/Edit/Bash (Ubuntu 24.04) | Clonar, instalar, rodar Django/Playwright, gerar relatórios |
-| Arquivos no computador do usuário | `remote-devices` (device_bash, stage/commit) | Entregar a branch no repositório local (Windows) |
-| Subagentes | Agent (Explore, Plan, general-purpose) + `.claude/agents/` | Auditorias paralelas, verificação independente |
-| Orquestração multi-agente | Workflow (sob pedido explícito) | Auditoria em lote de módulos |
-| Navegador embutido | Claude Browser (app desktop) | Inspeção manual/visual da app local do usuário |
-| Navegador do usuário | Claude in Chrome | Idem, quando pedido |
-| Computer use | `computer_*` no dispositivo | Último recurso (apps Windows, Word COM) |
-| Memória | memória do usuário + `docs/agent/memory/` | Decisões/descobertas persistentes |
-| Projeto claude.ai | Projects | Relatórios que o time lê fora do repo |
-| Publicação | Artifact | Painel de saúde/relatórios compartilháveis |
-| Agendamento | scheduled tasks (create_trigger) | Health check/auditoria periódica (sugerido, não criado) |
+| Ferramenta | Categoria | Classificação | Estado | Substituto |
+|---|---|---|---|---|
+| project-mcp | agent | CORE | READY | — |
+| agent_lab (app Django) | agent | CORE | READY | — |
+| scripts/agent/lab.py | agent | CORE | READY | — |
+| agent:doctor | agent | CORE | READY | — |
+| agent:self-test | agent | CORE | READY | — |
+| skills do projeto (55) | agent | CORE | READY | — |
+| subagentes (23) | agent | CORE | READY | — |
+| pipelines do orquestrador (8) | agent | CORE | READY | — |
+| Superpowers | agent | USEFUL | READY | — |
+| Workflow (multiagente) | agent | OPTIONAL | READY | — |
+| browser_* (project-mcp) | browser | CORE | READY | — |
+| @playwright/test | testing | CORE | READY | — |
+| Chromium (Playwright) | browser | CORE | READY | — |
+| Playwright MCP (plugin Microsoft) | browser | REDUNDANT | UNAVAILABLE | browser_* do project-mcp |
+| Claude Browser (app desktop) | browser | USEFUL | READY | browser_* para evidência reprodutível |
+| Claude in Chrome | browser | OPTIONAL | READY | — |
+| @axe-core/playwright | testing | CORE | READY | — |
+| Axe MCP (plugin Deque) | testing | OPTIONAL | REQUIRES_MANUAL_CONNECTION | audit_accessibility + @axe-core/playwright |
+| pixelmatch + pngjs | testing | CORE | READY | — |
+| Lighthouse | testing | UNNECESSARY | UNAVAILABLE | audit_performance + tests/perf (LCP/CLS/bytes/Server-Timing) |
+| Design (plugin Anthropic) | design | USEFUL | READY | — |
+| Figma (plugin + conector) | design | OPTIONAL | REQUIRES_MANUAL_CONNECTION | UI Lab + tokens DTCG + Design artifact |
+| tokens DTCG + build_tokens.py | design | CORE | READY | — |
+| UI Lab (/_lab/) | design | CORE | READY | — |
+| MagicPath | design | UNNECESSARY | UNAVAILABLE | prototype-ui (UI Lab / Design artifact / Figma) |
+| WebSearch/WebFetch | research | CORE | READY | — |
+| Context7 (plugin + conector) | research | USEFUL | REQUIRES_MANUAL_CONNECTION | código instalado (.venv/node_modules) + WebFetch na doc oficial |
+| Tavily | research | REDUNDANT | UNAVAILABLE | WebSearch/WebFetch nativos |
+| knowledge_* (project-mcp) | documentation | CORE | READY | — |
+| Projects (claude.ai) | documentation | USEFUL | READY | — |
+| git_* (project-mcp) | git | CORE | READY | — |
+| GitHub MCP (plugin/conector) | git | USEFUL | REQUIRES_MANUAL_CONNECTION | git local + bundle entregue na pasta do usuário |
+| code-review (plugin Anthropic) | git | USEFUL | READY | — |
+| Django test runner | backend | CORE | READY | — |
+| db_* (project-mcp) / agent_db | database | CORE | READY | — |
+| environment.py (LAB/DEV/STAGING/PRODUCTION) | database | CORE | READY | — |
+| MCP de Postgres | database | UNNECESSARY | UNAVAILABLE | db_* do project-mcp (respeita ambiente) |
+| api_* (project-mcp) / agent_api | backend | CORE | READY | — |
+| obs_* + ObservabilidadeMiddleware | observability | CORE | READY | — |
+| Sentry | observability | OPTIONAL | UNAVAILABLE | observabilidade local do lab; LOGGING estruturado recomendado |
+| ruff | frontend | CORE | READY | — |
+| bandit | security | CORE | READY | — |
+| manage.py check --deploy | security | CORE | READY | — |
+| pip-audit | security | CORE | READY | — |
+| npm audit | security | CORE | READY | — |
+| gitleaks (CI) | security | CORE | READY | — |
+| Dependabot | security | CORE | READY | — |
+| Semgrep / CodeQL | security | OPTIONAL | UNAVAILABLE | bandit (Python) + auditoria estática do lab; CodeQL pode ser ligado no GitHub sem custo |
+| Scanner de container/IaC (Trivy/Checkov) | security | UNNECESSARY | UNAVAILABLE | não há Dockerfile/IaC no projeto |
+| deploy-vps.yml | deployment | USEFUL | READY | — |
+| Vercel/Render/AWS MCPs | deployment | UNNECESSARY | UNAVAILABLE | deploy próprio (VPS/Windows) |
+| scheduled tasks (claude.ai) | deployment | OPTIONAL | READY | — |
+| TypeScript (tsc strict) | frontend | CORE | READY | — |
+| tsx | frontend | CORE | READY | — |
 
-### Plugins (marketplace oficial) — instalados pelo usuário nesta sessão
+## O que a re-auditoria descobriu
 
-| Plugin | Origem | Traz | Por quê |
-|---|---|---|---|
-| **github** | GitHub (parceiro, revisado) | MCP GitHub: issues, PRs, histórico | Issues/PRs a partir de achados; hoje o push desta sessão é bloqueado (repo fora das fontes autorizadas) |
-| **playwright** | Microsoft (parceiro) | MCP Playwright | Navegação exploratória pelo agente (árvore de acessibilidade, sem coordenadas) |
-| **Axe Accessibility** | Deque (parceiro) | skills + MCP axe (analyze/igt/remediate) | Loop de remediação guiado; o MCP exige chave da Deque — a varredura base usa `@axe-core/playwright` (sem chave) |
-| **code-review** | Anthropic | comando `/code-review` multiagente | Revisão de PR com pontuação de confiança |
-| **Design** | Anthropic | skills: design-critique, design-system, accessibility-review, ux-copy, handoff | Crítica e documentação do DS |
+- **MCPs de plugin não sobem na sessão Cowork na nuvem.** github, playwright, context7, figma e axe aparecem instalados (9
+  plugins sincronizados), mas os diretórios de plugins só-MCP ficam vazios e `RefreshMcpTools` não lista seus servidores.
+  Skills de plugin funcionam (Superpowers, Design, Axe, Figma, code-review). Por isso a capacidade de navegador/MCP do
+  agente foi construída **no próprio repositório** (`project-mcp`), que funciona aqui e no Claude Code CLI.
+- **Egress**: `mcp.context7.com` e `context7.com` bloqueados pelo proxy desta sessão; PyPI e npm liberados.
+- **Pesquisa web**: escolhido **WebSearch/WebFetch nativos** (sem chave, já disponíveis). Tavily avaliado e rejeitado como redundante.
+- **MagicPath**: rejeitado — canvas de componentes React de terceiros não se aplica a um front Django server-rendered; protótipos
+  vão no UI Lab (espécimes com tokens reais) ou em artefato Design; skill `prototype-ui`.
+- **design-superpowers / ux-superpowers / ZSL Superpowers**: comunitários e sobrepostos ao Superpowers + Design → rejeitados.
 
-> Os servidores MCP de plugins aparecem nas **próximas** sessões; as skills já estão ativas.
-> Não instalados, por redundância ou falta de caso de uso: Figma (não há arquivos Figma — o DS vem de
-> `docs/design-import/*.html`), Sentry (sem conta/instrumentação), Vercel/Render/AWS (deploy é VPS própria),
-> PlanetScale (banco é PostgreSQL próprio), plugins comunitários de revisão (sobrepõem o `code-review` oficial).
+## Adicionado nesta missão
 
-## 2. Ferramentas locais adicionadas ao repositório
-
-| Ferramenta | Versão | Onde | Papel |
-|---|---|---|---|
-| `@playwright/test` | 1.56.0 (fixada = browsers do ambiente) | package.json | E2E, smoke, visual, responsivo, perf |
-| `@axe-core/playwright` | 4.10.2 (`playwright-core` forçado a 1.56 via `overrides`) | package.json | Acessibilidade automatizada |
-| `typescript` / `@types/node` | 5.7.2 / 22.10.2 | package.json | `npm run typecheck` (modo strict) dos testes |
-| `pixelmatch` + `pngjs` | 7.1.0 / 7.0.0 | package.json | Antes/depois/diff (`tests/tools/visual-compare.mjs`) |
-| `ruff` | ≥0.8 | requirements-dev.txt | Lint (portão: erros de runtime) e formatação do código novo |
-| `pip-audit` | ≥2.7 | requirements-dev.txt | Vulnerabilidades em dependências Python |
-| `tblib` | ≥3.0 | requirements-dev.txt | Suíte paralela do Django reporta falhas em vez de quebrar |
-| MCP Playwright (projeto) | `@playwright/mcp@latest` | `.mcp.json` | Para Claude Code CLI na máquina do usuário |
-
-Nada foi instalado globalmente na máquina do usuário. No Windows, `npm run agent:bootstrap` instala
-o que faltar dentro do projeto (`.venv`, `node_modules`, Chromium do Playwright).
-
-## 3. Já existia e foi mantido
-
-Django `TestCase` (3.054 testes), goldens DOCX/PDF, CI GitHub Actions (PG 18 + SQLite), deploy
-VPS, `.claude/launch.json` (perfis de servidor no Windows), scripts de paridade em `scripts/`.
-
-## 4. Ambiente da nuvem (referência)
-
-Python 3.14.0rc2 (uv), Node 22.22, npm 10.9, pnpm, PostgreSQL 16, LibreOffice, Chromium 1194,
-Docker CLI, mermaid-cli global. Sem `gh` e sem credencial de push para este repositório.
+`project-mcp` (106 ferramentas), `@modelcontextprotocol/sdk` 1.31, `zod` 3, `tsx` 4.23, `@types/pngjs`, `bandit`;
+comandos `agent:doctor`, `agent:doctor:fix`, `agent:self-test`, `agent:security`, `agent:command-center`, `agent:db-audit`,
+`agent:tokens`, `mcp:sanity`, `mcp:project`; `manage.py agent_query|agent_env|agent_db|agent_api`.

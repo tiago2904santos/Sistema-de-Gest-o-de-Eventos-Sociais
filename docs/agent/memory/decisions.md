@@ -17,3 +17,4 @@
   Portão do CI só em erros de runtime (E9/F63/F7/F82); o resto é relatório.
 - **2026-09-29 · Playwright fixado em 1.56.0** para casar com os browsers pré-instalados; `playwright-core` forçado via `overrides`
   porque o `@axe-core/playwright` puxava 1.63 e quebrava os tipos.
+- **2026-09-29 · Missão 2** — ver `tooling-decisions.md` (MCP consolidado, ambiente por marca interna, pesquisa nativa, CI em trilhas).

@@ -4,7 +4,7 @@
 
 | Peça | Onde | Faz |
 |---|---|---|
-| CLI | `scripts/agent/lab.py` (via `node scripts/agent/run.mjs` ou `npm run agent:*`) | bootstrap, health, serve, reset, seed, inventory, depgraph, audit, db-audit, tokens, env |
+| CLI | `scripts/agent/lab.py` (via `node scripts/agent/run.mjs` ou os scripts `agent:` do package.json) | bootstrap, health, serve, reset, seed, inventory, depgraph, audit, db-audit, tokens, security, doctor, command-center, manage, env |
 | App `agent_lab` | `agent_lab/` (só com `AGENT_LAB=1`, padrão em DEBUG) | inventário, seed, reset, UI Lab, sonda, prévia de erros, auditorias |
 | UI Lab | `/_lab/` e `/_lab/c/<id>/` | componentes reais isolados por estado; fumaça de todos os componentes |
 | Sonda | `/_lab/health/` | banco, migrações pendentes, relógio, usuários do lab |
@@ -13,6 +13,10 @@
 | Motor de auditoria | `agent_lab/audit_static.py` + `tests/tools/audit-page.mjs` | achados no formato comum |
 | Comparação visual | `tests/tools/visual-compare.mjs` | before/after/diff |
 | Tokens | `tokens/*.json` → `scripts/agent/build_tokens.py` | CSS `--t-*` + relatório de contraste |
+| project-mcp | `tools/project-mcp/` (`.mcp.json`) | 106 ferramentas sobre tudo acima — `docs/agent/mcp.md` |
+| Ambiente | `agent_lab/environment.py` (`manage.py agent_env`) | LAB/DEV/STAGING/PRODUCTION; reset só em LAB |
+| Observabilidade | `agent_lab/observability.py` | `.lab/observability/*.jsonl` + `Server-Timing` |
+| Doctor / self-test | `scripts/agent/doctor.py`, `tools/project-mcp/test/selftest.ts` | diagnóstico, auto-recuperação, prova ponta a ponta |
 
 ## Ambiente do servidor do laboratório
 

@@ -12,5 +12,8 @@ Ler antes de trabalhar; escrever no mesmo commit da mudança que gerou o aprendi
 | [approved-patterns.md](approved-patterns.md) | Padrões validados para reutilizar |
 | [rejected-patterns.md](rejected-patterns.md) | O que foi tentado/considerado e rejeitado, e por quê |
 | [lessons-learned.md](lessons-learned.md) | Lições gerais de processo |
+| [tooling-decisions.md](tooling-decisions.md) | Decisões sobre ferramentas do agente |
+| [tooling-lessons.md](tooling-lessons.md) | O que funcionou/falhou no ferramental e por quê |
+| [agent-patterns.md](agent-patterns.md) | Padrões de trabalho do agente que funcionam |
 
 Formato de entrada: `- **AAAA-MM-DD · título** — texto. Evidência: <caminho>.`

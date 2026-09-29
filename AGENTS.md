@@ -27,6 +27,12 @@ valem para todos. Detalhes específicos do Claude estão em `CLAUDE.md`.
 - Atualizar baseline visual/a11y/responsivo para "fazer o teste passar" sem revisar a diferença.
 - Alterar regra de negócio (cálculo de diárias, numeração, documentos oficiais) sem teste de caracterização antes.
 
+## Ferramentas
+
+Use a mais específica (`docs/agent/tool-selection-policy.md`): project-mcp → comandos do laboratório → skills/plugins →
+ferramentas genéricas. Registro: `docs/agent/tool-registry.json`. Antes de afirmar "pronto": `npm run agent:doctor` e a
+validação do pipeline.
+
 ## Convenções
 
 - Código, mensagens e documentação em **português**; identificadores seguem o que o app já usa.
