@@ -24,3 +24,15 @@ achados. Achados sempre no formato `docs/agent/audit-finding.schema.json` (sever
 ## Pronto quando
 
 Todo endpoint com guarda e resposta de erro definida. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`api_discover_endpoints`, `api_check_contracts`, `project_inspect_route` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+10 endpoints JSON internos descobertos no cenário normal.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

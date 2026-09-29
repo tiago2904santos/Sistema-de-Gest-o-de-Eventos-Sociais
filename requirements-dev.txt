@@ -5,3 +5,5 @@ tblib>=3.0
 ruff>=0.8
 # Vulnerabilidades conhecidas nas dependências (PyPI advisory DB / OSV).
 pip-audit>=2.7
+# SAST Python (padrões inseguros: subprocess com shell, pickle, yaml.load, senhas fixas…).
+bandit>=1.8

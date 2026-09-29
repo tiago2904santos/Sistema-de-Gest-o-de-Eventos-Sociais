@@ -93,6 +93,14 @@ def health(request):
         dados["db_ok"] = False
         dados["db_error"] = f"{type(exc).__name__}: {exc}"
     try:
+        from .environment import detectar
+
+        amb = detectar()
+        dados["environment"] = amb["environment"]
+        dados["capabilities"] = amb["capabilities"]
+    except Exception as exc:
+        dados["environment"] = f"erro: {exc}"
+    try:
         from .seed import estado_atual
 
         dados["seed"] = estado_atual()

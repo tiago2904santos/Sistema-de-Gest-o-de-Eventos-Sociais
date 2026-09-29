@@ -1,0 +1,63 @@
+{
+  "name": "rebuild-system",
+  "description": "Reconstruir o sistema: ratificar ADR, DS v4, piloto, módulos na ordem da matriz.",
+  "phases": [
+    {
+      "phase": "RATIFY",
+      "agent": "tooling-architect",
+      "skills": [
+        "plan-architecture"
+      ],
+      "tools": [
+        "knowledge_search_architecture"
+      ],
+      "exit_criteria": "ADR 0001 ratificado pelo usuário."
+    },
+    {
+      "phase": "FOUNDATION",
+      "agent": "design-system-agent",
+      "skills": [
+        "design-system-decision",
+        "component-design"
+      ],
+      "tools": [
+        "inventory_get_design_tokens",
+        "audit_component"
+      ],
+      "exit_criteria": "Tokens, casco e componentes base no UI Lab."
+    },
+    {
+      "phase": "PILOT",
+      "agent": "frontend-implementer",
+      "skills": [
+        "page-design"
+      ],
+      "tools": [
+        "audit_page"
+      ],
+      "exit_criteria": "Login + páginas de erro migradas com paridade."
+    },
+    {
+      "phase": "MODULES",
+      "agent": "migration-agent",
+      "skills": [
+        "migration-execution"
+      ],
+      "tools": [
+        "agent_get_pipeline"
+      ],
+      "exit_criteria": "Módulos na ordem da matriz (pipeline migrate-module)."
+    },
+    {
+      "phase": "DECOMMISSION",
+      "agent": "frontend-architect",
+      "skills": [
+        "consolidate-components"
+      ],
+      "tools": [
+        "inventory_get_duplicate_components"
+      ],
+      "exit_criteria": "CSS legado removido quando o inventário mostrar uso zero."
+    }
+  ]
+}

@@ -26,3 +26,15 @@ relatório consolidado de UI. Achados sempre no formato `docs/agent/audit-findin
 ## Pronto quando
 
 Top problemas priorizados com evidência (captura/axe/overflow). Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`testing_run_a11y_tests`, `testing_run_responsive_tests`, `testing_run_perf_tests`, `report_generate_audit_report` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+20 páginas × 6 viewports → 40 combinações com overflow, todas pela navegação de Viagens.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

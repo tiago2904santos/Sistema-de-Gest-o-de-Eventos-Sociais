@@ -25,3 +25,15 @@ migrações + testes. Achados sempre no formato `docs/agent/audit-finding.schema
 ## Pronto quando
 
 Ida e volta testadas. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`db_validate_migrations`, `db_environment` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Motorista→Servidor da F1: estrutura → dados → estrutura.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

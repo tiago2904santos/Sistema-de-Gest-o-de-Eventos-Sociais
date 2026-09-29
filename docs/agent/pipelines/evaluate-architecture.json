@@ -1,0 +1,50 @@
+{
+  "name": "evaluate-architecture",
+  "description": "Avaliar a arquitetura e propor evolução.",
+  "phases": [
+    {
+      "phase": "MEASURE",
+      "agent": "architecture-agent",
+      "skills": [
+        "architecture-audit"
+      ],
+      "tools": [
+        "inventory_get_dependency_graph",
+        "audit_static",
+        "db_audit"
+      ],
+      "exit_criteria": "Métricas e ciclos medidos."
+    },
+    {
+      "phase": "RESEARCH",
+      "agent": "research-agent",
+      "skills": [
+        "research-technical"
+      ],
+      "tools": [
+        "WebSearch"
+      ],
+      "exit_criteria": "Alternativas atuais com fonte."
+    },
+    {
+      "phase": "DECIDE",
+      "agent": "architecture-agent",
+      "skills": [
+        "plan-architecture"
+      ],
+      "tools": [
+        "knowledge_search_architecture"
+      ],
+      "exit_criteria": "ADR com alternativas, custos e gatilhos."
+    },
+    {
+      "phase": "VERIFY",
+      "agent": "final-verifier",
+      "skills": [],
+      "tools": [
+        "knowledge_read_section"
+      ],
+      "exit_criteria": "Números do ADR conferidos no inventário do dia."
+    }
+  ]
+}

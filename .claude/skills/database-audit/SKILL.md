@@ -26,3 +26,15 @@ Auditar o banco: relações, on_delete, constraints, índices, dados órfãos/du
 ## Pronto quando
 
 Cascatas confirmadas por teste; nada destrutivo fora do lab. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`db_audit`, `db_find_anomalies`, `db_index_review`, `db_environment` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+KP-00: cascata `PrestacaoServidor.servidor` confirmada pela view no lab.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

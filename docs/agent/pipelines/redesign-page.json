@@ -1,0 +1,79 @@
+{
+  "name": "redesign-page",
+  "description": "Redesenhar uma página seguindo um arquétipo, com paridade e evidência antes/depois.",
+  "phases": [
+    {
+      "phase": "DISCOVER",
+      "agent": "product-discovery-agent",
+      "skills": [
+        "product-discovery"
+      ],
+      "tools": [
+        "project_inspect_page",
+        "project_inspect_route",
+        "inventory_get_page_archetypes"
+      ],
+      "exit_criteria": "Função da página, dados, papéis e arquétipo definidos."
+    },
+    {
+      "phase": "BASELINE",
+      "agent": "design-agent",
+      "skills": [
+        "browser-evidence"
+      ],
+      "tools": [
+        "audit_page",
+        "audit_visual"
+      ],
+      "exit_criteria": "Capturas/axe/layout 'antes' salvos (label antes)."
+    },
+    {
+      "phase": "DESIGN DIRECTION",
+      "agent": "design-agent",
+      "skills": [
+        "ux-decision",
+        "design-system-decision"
+      ],
+      "tools": [
+        "knowledge_search_design_system",
+        "inventory_get_design_tokens"
+      ],
+      "exit_criteria": "Decisão registrada; componentes DS escolhidos."
+    },
+    {
+      "phase": "IMPLEMENT",
+      "agent": "frontend-implementer",
+      "skills": [
+        "page-design",
+        "component-contract"
+      ],
+      "tools": [
+        "git_create_checkpoint"
+      ],
+      "exit_criteria": "Página no DS alvo; estados completos."
+    },
+    {
+      "phase": "COMPARE",
+      "agent": "design-agent",
+      "skills": [
+        "visual-diagnosis"
+      ],
+      "tools": [
+        "audit_page",
+        "compare_screenshots"
+      ],
+      "exit_criteria": "Antes/depois com diffs revisados; catracas iguais ou melhores."
+    },
+    {
+      "phase": "VERIFY",
+      "agent": "final-verifier",
+      "skills": [
+        "bug-fix-verification"
+      ],
+      "tools": [
+        "testing_run_full_validation"
+      ],
+      "exit_criteria": "Paridade de dados/permissões + validação completa."
+    }
+  ]
+}

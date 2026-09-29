@@ -27,3 +27,15 @@ achados em `reports/audit/`. Achados sempre no formato `docs/agent/audit-finding
 ## Pronto quando
 
 Nenhum achado sem evidência; P0/P1 reproduzidos. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`audit_static`, `inventory_get_duplicate_components`, `testing_run_django_tests` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+`viagens_prestacoes/views.py` > 1.500 linhas → MAINTAINABILITY P3 com proposta de divisão por caso de uso.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

@@ -33,15 +33,25 @@
     "posttest:responsive": "node tests/tools/summarize.mjs responsive",
     "test:a11y:baseline": "playwright test --project=a11y; node tests/tools/summarize.mjs a11y --update-baseline",
     "agent:db-audit": "node scripts/agent/run.mjs db-audit",
-    "agent:tokens": "node scripts/agent/run.mjs tokens"
+    "agent:tokens": "node scripts/agent/run.mjs tokens",
+    "agent:security": "node scripts/agent/run.mjs security",
+    "agent:doctor": "node scripts/agent/run.mjs doctor",
+    "agent:doctor:fix": "node scripts/agent/run.mjs doctor --fix",
+    "agent:self-test": "tsx tools/project-mcp/test/selftest.ts",
+    "mcp:project": "tsx tools/project-mcp/src/server.ts",
+    "mcp:sanity": "tsx tools/project-mcp/test/handshake.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",
+    "@modelcontextprotocol/sdk": "^1.31.0",
     "@playwright/test": "1.56.0",
     "@types/node": "22.10.2",
-    "typescript": "5.7.2",
+    "@types/pngjs": "^6.0.5",
     "pixelmatch": "7.1.0",
-    "pngjs": "7.0.0"
+    "pngjs": "7.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "5.7.2",
+    "zod": "^3.25.76"
   },
   "overrides": {
     "playwright-core": "1.56.0"

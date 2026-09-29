@@ -26,3 +26,15 @@ diffs revisados. Achados sempre no formato `docs/agent/audit-finding.schema.json
 ## Pronto quando
 
 Nenhum baseline atualizado sem olhar o diff. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`audit_visual`, `compare_screenshots`, `testing_run_visual_tests` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+`audit_visual {key:'oficios-lista'}` com 0,4% de diff → revisar `diff.png`.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

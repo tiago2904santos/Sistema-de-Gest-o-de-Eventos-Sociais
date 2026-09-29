@@ -26,3 +26,15 @@ resumo do módulo em `docs/product/`. Achados sempre no formato `docs/agent/audi
 ## Pronto quando
 
 Fluxo documentado com estados e papéis, validado navegando. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`project_inspect_permission`, `project_inspect_route`, `inventory_get_ui_inventory`, `knowledge_search_business_rules`, `browser_run_page_flow` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Módulo Viagens: 12 itens de navegação, papéis gestor/operador/leitor, prestação criada por signal do ofício.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

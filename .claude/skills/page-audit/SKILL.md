@@ -26,3 +26,15 @@ Auditar UMA página de ponta a ponta com evidência.
 ## Pronto quando
 
 Achados com severidade + capturas; estados vazio/erro verificados. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`audit_page`, `report_generate_page_report`, `audit_accessibility`, `audit_responsive` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+`audit_page {path:'/viagens/prestacoes/', role:'viagensGestor'}` → 656 KB de HTML, 52 contrastes.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

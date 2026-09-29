@@ -25,3 +25,15 @@ achados. Achados sempre no formato `docs/agent/audit-finding.schema.json` (sever
 ## Pronto quando
 
 Lista testada vazia, cheia e com texto longo. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`audit_table`, `project_inspect_page` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Lista de ofícios: nenhuma linha com link (UX-01).
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

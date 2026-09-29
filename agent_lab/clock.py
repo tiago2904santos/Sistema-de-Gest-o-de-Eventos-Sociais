@@ -32,3 +32,7 @@ def ancorar(iso: str):
 
 def desancorar():
     timezone.now.__code__ = _ORIGINAL_CODE
+
+
+def ancorado():
+    return timezone.now.__code__ is not _ORIGINAL_CODE

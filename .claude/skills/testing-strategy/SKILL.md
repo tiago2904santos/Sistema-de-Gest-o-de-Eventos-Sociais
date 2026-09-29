@@ -25,3 +25,15 @@ plano de testes. Achados sempre no formato `docs/agent/audit-finding.schema.json
 ## Pronto quando
 
 Cada risco coberto por pelo menos um teste real. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`knowledge_search_test_strategy`, `lab_list_scenarios` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Regra de diária → teste de caracterização + cenário `edge_case`.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

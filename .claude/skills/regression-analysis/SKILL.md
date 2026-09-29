@@ -25,3 +25,15 @@ commit culpado + teste. Achados sempre no formato `docs/agent/audit-finding.sche
 ## Pronto quando
 
 Teste falha antes e passa depois da correção. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`git_history`, `testing_run_regression_tests`, `report_generate_regression_report` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+`git bisect run npx playwright test -g 'oficios'` (também cobre 'regression-investigation').
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

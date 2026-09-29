@@ -26,3 +26,15 @@ specs em `tests/e2e/`. Achados sempre no formato `docs/agent/audit-finding.schem
 ## Pronto quando
 
 Teste estável em 3 execuções seguidas. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`testing_run_e2e_tests`, `browser_run_page_flow` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+`tests/e2e/permissions.spec.ts` como modelo de papel × acesso.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

@@ -25,3 +25,15 @@ tag. Achados sempre no formato `docs/agent/audit-finding.schema.json` (severidad
 ## Pronto quando
 
 Rollback possível com um comando. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`git_create_checkpoint`, `git_status` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+`git_create_checkpoint {subject:'antes-nav-viagens'}`.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

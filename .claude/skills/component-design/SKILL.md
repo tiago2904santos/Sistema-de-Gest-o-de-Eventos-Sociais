@@ -26,3 +26,15 @@ componente + espécimes + doc. Achados sempre no formato `docs/agent/audit-findi
 ## Pronto quando
 
 Todos os estados no UI Lab, axe limpo, baseline criado. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`inventory_get_design_tokens`, `audit_component`, `compare_screenshots` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Botão v4 com estados loading/disabled como espécimes.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

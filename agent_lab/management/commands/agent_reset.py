@@ -28,8 +28,9 @@ class Command(BaseCommand):
             with connection.cursor() as c:
                 c.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
         elif connection.vendor == "sqlite":
+            arquivo = Path(str(connection.settings_dict["NAME"]))
             connection.close()
-            Path(banco).unlink(missing_ok=True)
+            arquivo.unlink(missing_ok=True)
         else:
             call_command("flush", interactive=False, verbosity=0)
         call_command("migrate", interactive=False, verbosity=0)

@@ -1,0 +1,179 @@
+{
+  "name": "full-chain",
+  "description": "Cadeia completa do orquestrador (use como modelo e corte fases que não se aplicam).",
+  "phases": [
+    {
+      "phase": "DISCOVER",
+      "agent": "product-discovery-agent",
+      "skills": [
+        "agent-discovery",
+        "product-discovery"
+      ],
+      "tools": [
+        "project_inspect_project",
+        "project_inspect_route",
+        "project_inspect_page",
+        "knowledge_search"
+      ],
+      "exit_criteria": "Escopo, rotas, entidades, papéis e regras identificados com fonte."
+    },
+    {
+      "phase": "RESEARCH",
+      "agent": "research-agent",
+      "skills": [
+        "research-technical",
+        "research-library"
+      ],
+      "tools": [
+        "knowledge_search",
+        "WebSearch",
+        "WebFetch"
+      ],
+      "exit_criteria": "Dúvidas de API/versão respondidas com fonte oficial ou código instalado."
+    },
+    {
+      "phase": "PLAN",
+      "agent": "tooling-architect",
+      "skills": [
+        "plan-feature",
+        "agent-tool-selection"
+      ],
+      "tools": [
+        "agent_select_tool",
+        "agent_get_pipeline"
+      ],
+      "exit_criteria": "Plano com passos, riscos, testes e critério de pronto."
+    },
+    {
+      "phase": "ARCHITECTURE",
+      "agent": "backend-architect",
+      "skills": [
+        "plan-architecture",
+        "component-contract"
+      ],
+      "tools": [
+        "inventory_get_dependency_graph",
+        "project_inspect_model"
+      ],
+      "exit_criteria": "Decisão registrada (ADR/decisions.md) quando houver trade-off."
+    },
+    {
+      "phase": "IMPLEMENT",
+      "agent": "frontend-implementer",
+      "skills": [
+        "component-design",
+        "page-design",
+        "refactor-component"
+      ],
+      "tools": [
+        "git_create_checkpoint",
+        "git_diff"
+      ],
+      "exit_criteria": "Mudança mínima, checkpoint antes, commits pequenos."
+    },
+    {
+      "phase": "TEST",
+      "agent": "qa-agent",
+      "skills": [
+        "testing-strategy",
+        "e2e-testing",
+        "bug-fix-verification"
+      ],
+      "tools": [
+        "testing_run_django_tests",
+        "testing_run_e2e_tests",
+        "testing_run_smoke_tests"
+      ],
+      "exit_criteria": "Testes relevantes verdes; teste novo cobre a mudança."
+    },
+    {
+      "phase": "VISUAL REVIEW",
+      "agent": "design-agent",
+      "skills": [
+        "visual-diagnosis",
+        "visual-regression",
+        "browser-evidence"
+      ],
+      "tools": [
+        "audit_visual",
+        "compare_screenshots",
+        "browser_capture_full_page"
+      ],
+      "exit_criteria": "Diffs revisados; baseline só para mudança intencional."
+    },
+    {
+      "phase": "ACCESSIBILITY",
+      "agent": "accessibility-agent",
+      "skills": [
+        "accessibility-audit"
+      ],
+      "tools": [
+        "audit_accessibility",
+        "browser_inspect_focus",
+        "testing_run_a11y_tests"
+      ],
+      "exit_criteria": "Sem aumento de critical/serious; catraca apertada se melhorou."
+    },
+    {
+      "phase": "SECURITY",
+      "agent": "security-agent",
+      "skills": [
+        "security-review",
+        "dependency-review"
+      ],
+      "tools": [
+        "audit_static",
+        "git_diff"
+      ],
+      "exit_criteria": "Sem achado P0–P2 novo de segurança."
+    },
+    {
+      "phase": "PERFORMANCE",
+      "agent": "performance-agent",
+      "skills": [
+        "performance-audit"
+      ],
+      "tools": [
+        "audit_performance",
+        "obs_get_slow_queries",
+        "db_explain"
+      ],
+      "exit_criteria": "Sem regressão de LCP/consultas; N+1 tratado."
+    },
+    {
+      "phase": "REGRESSION",
+      "agent": "qa-agent",
+      "skills": [
+        "regression-analysis"
+      ],
+      "tools": [
+        "report_generate_regression_report",
+        "testing_run_regression_tests"
+      ],
+      "exit_criteria": "Relatório de regressão sem pioras."
+    },
+    {
+      "phase": "VERIFY",
+      "agent": "final-verifier",
+      "skills": [
+        "release-validation",
+        "agent-self-diagnosis"
+      ],
+      "tools": [
+        "testing_run_full_validation",
+        "agent_doctor"
+      ],
+      "exit_criteria": "Toda afirmação do trabalho reverificada com comando."
+    },
+    {
+      "phase": "DOCUMENT",
+      "agent": "documentation-agent",
+      "skills": [],
+      "tools": [
+        "knowledge_search",
+        "git_diff"
+      ],
+      "exit_criteria": "Docs, memória e known-problems atualizados no mesmo commit."
+    }
+  ]
+}

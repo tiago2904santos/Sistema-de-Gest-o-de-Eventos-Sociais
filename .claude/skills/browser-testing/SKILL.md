@@ -25,3 +25,15 @@ notas + spec. Achados sempre no formato `docs/agent/audit-finding.schema.json` (
 ## Pronto quando
 
 Tudo que foi concluído no navegador está num teste. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`browser_open_page`, `browser_click`, `browser_fill`, `browser_inspect_dom`, `browser_run_page_flow` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Explorar o formulário de ofício e transformar o caminho feliz em spec e2e.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

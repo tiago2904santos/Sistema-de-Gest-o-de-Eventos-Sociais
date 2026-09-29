@@ -526,15 +526,35 @@ class Semeador:
 
     # -- orquestração -----------------------------------------------------
     def executar(self):
+        """Semeia SEMPRE sob o relógio ancorado (15/09/2026 10:00 −03): criado_em,
+        numerações e datas relativas saem iguais em qualquer máquina, dia ou caminho
+        (reset via lab.py, via MCP ou manage.py direto)."""
+        from . import clock
+
+        ja_ancorado = clock.ancorado()
+        if not ja_ancorado:
+            clock.ancorar(f"{ANCORA.isoformat()}T10:00:00-03:00")
+        try:
+            return self._executar()
+        finally:
+            if not ja_ancorado:
+                clock.desancorar()
+
+    def _executar(self):
         etapas = [self.base]
         if self.n:
-            etapas += [
+            dominio = [
                 self.eventos_sociais,
                 self.viagens_cadastros,
                 self.viagens_documentos,
                 self.ascom,
                 self.coffee_break,
             ]
+            if self.modulos:
+                # viagens_documentos precisa de servidores/viaturas: puxa o cadastro junto.
+                pedidos = set(self.modulos) | ({"viagens_cadastros"} if "viagens_documentos" in self.modulos else set())
+                dominio = [e for e in dominio if e.__name__ in pedidos]
+            etapas += dominio
         erros = {}
         for etapa in etapas:
             try:

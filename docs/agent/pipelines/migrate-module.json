@@ -1,0 +1,55 @@
+{
+  "name": "migrate-module",
+  "description": "Migrar um módulo para a arquitetura/DS alvo (ADR 0001).",
+  "phases": [
+    {
+      "phase": "PLAN",
+      "agent": "migration-agent",
+      "skills": [
+        "migration-planning"
+      ],
+      "tools": [
+        "inventory_get_migration_status",
+        "project_inspect_permission"
+      ],
+      "exit_criteria": "Plano com ordem de páginas e critérios de paridade."
+    },
+    {
+      "phase": "PER PAGE",
+      "agent": "migration-agent",
+      "skills": [
+        "migration-execution",
+        "page-design"
+      ],
+      "tools": [
+        "audit_page",
+        "git_create_checkpoint",
+        "compare_screenshots"
+      ],
+      "exit_criteria": "Uma página por commit, paridade provada."
+    },
+    {
+      "phase": "DATA",
+      "agent": "database-agent",
+      "skills": [
+        "data-migration",
+        "database-review"
+      ],
+      "tools": [
+        "db_validate_migrations"
+      ],
+      "exit_criteria": "Migrações ida e volta testadas."
+    },
+    {
+      "phase": "VERIFY",
+      "agent": "final-verifier",
+      "skills": [
+        "release-validation"
+      ],
+      "tools": [
+        "testing_run_full_validation"
+      ],
+      "exit_criteria": "Matriz de migração atualizada."
+    }
+  ]
+}

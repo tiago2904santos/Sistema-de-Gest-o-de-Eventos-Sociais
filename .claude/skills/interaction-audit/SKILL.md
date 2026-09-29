@@ -25,3 +25,15 @@ spec e2e cobrindo a interação. Achados sempre no formato `docs/agent/audit-fin
 ## Pronto quando
 
 Interação funciona só com teclado e sobrevive a falha de rede. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`browser_run_page_flow`, `browser_test_keyboard`, `browser_inspect_console` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Select pesquisável: Enter escolhe, Esc fecha, foco volta ao campo.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

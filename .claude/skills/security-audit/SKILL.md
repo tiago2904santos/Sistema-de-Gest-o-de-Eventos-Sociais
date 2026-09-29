@@ -26,3 +26,15 @@ achados SECURITY. Achados sempre no formato `docs/agent/audit-finding.schema.jso
 ## Pronto quando
 
 Nenhuma rota protegida acessível sem permissão. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`audit_static`, `project_inspect_permission`, `browser_open_page` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+`lab.sem_modulo` em /viagens/oficios/ → 403 esperado.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

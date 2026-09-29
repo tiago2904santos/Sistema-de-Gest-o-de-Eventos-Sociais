@@ -25,3 +25,15 @@ página + evidência antes/depois. Achados sempre no formato `docs/agent/audit-f
 ## Pronto quando
 
 Catracas iguais ou melhores; paridade de dados. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`audit_page`, `compare_screenshots`, `inventory_get_page_archetypes` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Lista de publicações no arquétipo LIST com antes/depois.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

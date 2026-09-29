@@ -26,3 +26,15 @@ achados + spec. Achados sempre no formato `docs/agent/audit-finding.schema.json`
 ## Pronto quando
 
 Todo campo obrigatório tem erro anunciado. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`audit_form`, `project_inspect_form`, `browser_submit` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+`audit_form {path:'/solicitacoes/nova/', role:'solicitante'}`.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

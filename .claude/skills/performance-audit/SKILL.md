@@ -26,3 +26,15 @@ métricas + achados PERFORMANCE. Achados sempre no formato `docs/agent/audit-fin
 ## Pronto quando
 
 Hipótese de gargalo confirmada por medida antes de otimizar. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`audit_performance`, `obs_get_slow_queries`, `db_explain`, `testing_run_perf_tests` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Server-Timing mostra 180 queries numa lista → N+1 em `obs_get_slow_queries`.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

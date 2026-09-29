@@ -1,8 +1,28 @@
 {
   "mcpServers": {
+    "project-mcp": {
+      "command": "npx",
+      "args": [
+        "tsx",
+        "tools/project-mcp/src/server.ts"
+      ],
+      "env": {
+        "LAB_PORT": "8031"
+      }
+    },
     "playwright": {
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest", "--browser", "chromium", "--viewport-size", "1440,900", "--save-trace", "--output-dir", "reports/mcp-playwright"]
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--browser",
+        "chromium",
+        "--viewport-size",
+        "1440,900",
+        "--save-trace",
+        "--output-dir",
+        "reports/mcp-playwright"
+      ]
     }
   }
 }

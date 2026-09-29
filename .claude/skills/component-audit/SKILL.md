@@ -26,3 +26,15 @@ espécimes + achados. Achados sempre no formato `docs/agent/audit-finding.schema
 ## Pronto quando
 
 Todos os estados renderizam; sem violação axe crítica. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`project_inspect_component`, `inventory_get_specimens`, `audit_component` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+`button-long` vaza do contêiner (KP-14).
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

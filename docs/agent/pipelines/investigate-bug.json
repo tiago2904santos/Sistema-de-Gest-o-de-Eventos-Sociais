@@ -1,0 +1,57 @@
+{
+  "name": "investigate-bug",
+  "description": "Investigar e corrigir um bug com reprodução e prova.",
+  "phases": [
+    {
+      "phase": "REPRODUCE",
+      "agent": "qa-agent",
+      "skills": [
+        "bug-reproduction"
+      ],
+      "tools": [
+        "lab_reset",
+        "browser_run_page_flow",
+        "obs_get_errors"
+      ],
+      "exit_criteria": "Reprodução determinística (cenário + passos) com evidência."
+    },
+    {
+      "phase": "DIAGNOSE",
+      "agent": "backend-implementer",
+      "skills": [
+        "regression-analysis",
+        "superpowers:systematic-debugging"
+      ],
+      "tools": [
+        "project_inspect_route",
+        "git_history",
+        "db_explain",
+        "obs_get_slow_queries"
+      ],
+      "exit_criteria": "Causa raiz com arquivo:linha."
+    },
+    {
+      "phase": "FIX",
+      "agent": "backend-implementer",
+      "skills": [
+        "bug-fix-verification"
+      ],
+      "tools": [
+        "git_create_checkpoint"
+      ],
+      "exit_criteria": "Teste que falha antes e passa depois."
+    },
+    {
+      "phase": "VERIFY",
+      "agent": "final-verifier",
+      "skills": [
+        "bug-fix-verification"
+      ],
+      "tools": [
+        "testing_run_django_tests",
+        "report_generate_regression_report"
+      ],
+      "exit_criteria": "Sem regressão; known-problems atualizado."
+    }
+  ]
+}

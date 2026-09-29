@@ -26,3 +26,15 @@ Auditoria WCAG 2.2 AA automatizada + teclado.
 ## Pronto quando
 
 Sem aumento de critical/serious; baseline apertado se melhorou. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`audit_accessibility`, `browser_inspect_focus`, `browser_inspect_accessibility_tree`, `testing_run_a11y_tests` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Agenda: 5 `aria-allowed-attr` críticas.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

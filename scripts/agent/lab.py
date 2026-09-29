@@ -12,6 +12,7 @@ Comandos:
     inventory   regenera ui-inventory/*.json
     depgraph    regenera o mapa de dependências (reports/architecture/)
     audit       auditoria estática (templates/CSS/rotas) → reports/audit/static-*.json
+    security    bandit (catraca) + check --deploy + pip-audit + npm audit → reports/security/
     tokens      compila tokens/*.json → static/css/tokens.css (+ relatório de contraste)
     db-audit    auditoria do banco do laboratório → reports/data/db-audit.{json,md}
     env         mostra o ambiente que o laboratório usa (sem segredos)
@@ -91,7 +92,7 @@ def lab_env(freeze: bool = True) -> dict:
             "WHATSAPP_VERIFY_TOKEN": "",
             "LEGADO_DB_NAME": "",
             "MEDIA_ROOT": str(LAB_DIR / "media"),
-        "AGENT_LAB_OBS": os.environ.get("AGENT_LAB_OBS", "1"),
+            "AGENT_LAB_OBS": os.environ.get("AGENT_LAB_OBS", "1"),
             "PYTHONIOENCODING": "utf-8",
             "PYTHONUTF8": "1",
         }
@@ -186,6 +187,92 @@ def cmd_depgraph(_a):
 
 def cmd_audit(_a):
     manage("agent_audit_static")
+
+
+def cmd_manage(a):
+    """Roda manage.py com o ambiente do laboratório (usado pelo project-mcp)."""
+    r = subprocess.run([python_exec(), "manage.py", *a.args], cwd=RAIZ, env=lab_env())
+    sys.exit(r.returncode)
+
+
+def cmd_security(a):
+    """SAST (bandit, catraca por baseline), check --deploy, pip-audit e npm audit → reports/security/."""
+    out = REPORTS / "security"
+    out.mkdir(parents=True, exist_ok=True)
+    bin_ = Path(python_exec()).parent
+    res = {}
+    excl = "./.venv,./node_modules,./tests,./agent_lab,./tools,*/tests,*/migrations"
+    r = run(
+        [
+            str(bin_ / "bandit"),
+            "-q",
+            "-r",
+            ".",
+            "-x",
+            excl,
+            "-b",
+            "tests/security/bandit-baseline.json",
+            "-f",
+            "json",
+            "-o",
+            str(out / "bandit.json"),
+        ],
+        check=False,
+        capture=True,
+    )
+    novos = (
+        json.loads((out / "bandit.json").read_text(encoding="utf-8")).get("results", [])
+        if (out / "bandit.json").exists()
+        else []
+    )
+    graves = [x for x in novos if x["issue_severity"] in ("HIGH", "MEDIUM")]
+    res["bandit"] = {
+        "ok": not graves,
+        "new_findings": len(novos),
+        "new_high_medium": [f"{x['test_id']} {x['filename']}:{x['line_number']}" for x in graves][:20],
+    }
+    env = {
+        **os.environ,
+        "DJANGO_DEBUG": "0",
+        "AGENT_LAB": "0",
+        "DJANGO_ALLOWED_HOSTS": "eventos.exemplo.gov.br",
+        "DJANGO_SECRET_KEY": "verificacao-deploy-" + "x" * 50,
+        "POSTGRES_DB": "",
+        "SQLITE_PATH": str(LAB_DIR / "deploy-check.sqlite3"),
+    }
+    r = run(
+        [python_exec(), "manage.py", "check", "--deploy", "--fail-level", "WARNING"], env=env, check=False, capture=True
+    )
+    res["check_deploy"] = {"ok": r.returncode == 0, "output": (r.stdout + r.stderr).strip()[-1500:]}
+    r = run([str(bin_ / "pip-audit"), "-r", "requirements.txt", "-f", "json"], check=False, capture=True, timeout=300)
+    try:
+        deps = json.loads(r.stdout or "{}").get("dependencies", [])
+        vul = [
+            {"name": d["name"], "version": d["version"], "vulns": [v["id"] for v in d.get("vulns", [])]}
+            for d in deps
+            if d.get("vulns")
+        ]
+        res["pip_audit"] = {"ok": not vul, "vulnerable": vul}
+    except ValueError:
+        res["pip_audit"] = {"ok": None, "error": (r.stderr or r.stdout)[-500:]}
+    r = run(["npm", "audit", "--json"], check=False, capture=True, timeout=180)
+    try:
+        meta = json.loads(r.stdout or "{}").get("metadata", {}).get("vulnerabilities", {})
+        res["npm_audit"] = {"ok": not (meta.get("high", 0) or meta.get("critical", 0)), "counts": meta}
+    except ValueError:
+        res["npm_audit"] = {"ok": None, "error": (r.stderr or "")[-300:]}
+    (out / "summary.json").write_text(json.dumps(res, indent=2, ensure_ascii=False), encoding="utf-8")
+    for k, v in res.items():
+        print(
+            f"{'✓' if v.get('ok') else ('?' if v.get('ok') is None else '✗')} {k}: {json.dumps({x: y for x, y in v.items() if x != 'ok'}, ensure_ascii=False)[:220]}"
+        )
+    # Portão: bandit sem achado novo HIGH/MEDIUM e check --deploy limpo. Vulnerabilidade de
+    # dependência é relatório (a correção pode exigir validar documentos — KP-13).
+    sys.exit(0 if res["bandit"]["ok"] and res["check_deploy"]["ok"] else 1)
+
+
+def cmd_doctor(a):
+    sys.exit(subprocess.call([python_exec(), str(RAIZ / "scripts" / "agent" / "doctor.py"), *a.args], cwd=RAIZ))
 
 
 def cmd_tokens(_a):
@@ -525,7 +612,11 @@ def main():
     for nome in ("reset", "seed"):
         sp = sub.add_parser(nome)
         sp.add_argument("--scenario", default="normal")
-    for nome in ("inventory", "depgraph", "audit", "db-audit", "tokens", "env"):
+    dr = sub.add_parser("doctor", help="diagnóstico/auto-recuperação (scripts/agent/doctor.py)")
+    dr.add_argument("args", nargs=argparse.REMAINDER)
+    mg = sub.add_parser("manage", help="manage.py com o ambiente do laboratório")
+    mg.add_argument("args", nargs=argparse.REMAINDER)
+    for nome in ("inventory", "depgraph", "audit", "db-audit", "tokens", "security", "env"):
         sub.add_parser(nome)
     a = p.parse_args()
     {
@@ -539,6 +630,9 @@ def main():
         "audit": cmd_audit,
         "db-audit": cmd_db_audit,
         "tokens": cmd_tokens,
+        "security": cmd_security,
+        "doctor": cmd_doctor,
+        "manage": cmd_manage,
         "env": cmd_env,
     }[a.cmd](a)
 

@@ -25,3 +25,15 @@ achados. Achados sempre no formato `docs/agent/audit-finding.schema.json` (sever
 ## Pronto quando
 
 Nenhuma navegação causa rolagem horizontal. Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`audit_navigation`, `inventory_get_ui_inventory` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Navegação de Viagens com 12 itens → P3 + overflow P2.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

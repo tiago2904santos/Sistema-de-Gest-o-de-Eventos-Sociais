@@ -166,3 +166,93 @@ class RelogioAncoradoTests(TestCase):
         finally:
             clock.desancorar()
         self.assertNotEqual(timezone.localdate().isoformat(), "2026-09-15")
+
+
+class AmbienteTests(TestCase):
+    def test_banco_de_teste_sem_marca_e_dev(self):
+        from agent_lab.environment import detectar
+
+        with override_settings(DEBUG=True):
+            self.assertEqual(detectar()["environment"], "DEV")
+
+    def test_marca_interna_torna_lab_e_libera_reset(self):
+        from agent_lab.environment import exigir, gravar_marca
+
+        gravar_marca()
+        with override_settings(DEBUG=True):
+            self.assertEqual(exigir("reset")["environment"], "LAB")
+
+    def test_sem_debug_e_production_somente_leitura(self):
+        from agent_lab.environment import AmbienteRecusado, detectar, exigir, gravar_marca
+
+        gravar_marca()  # nem a marca libera escrita sem DEBUG
+        with override_settings(DEBUG=False):
+            self.assertEqual(detectar()["environment"], "PRODUCTION")
+            with self.assertRaises(AmbienteRecusado):
+                exigir("write")
+
+    def test_declaracao_so_aumenta_risco(self):
+        import os
+
+        from agent_lab.environment import detectar, gravar_marca
+
+        gravar_marca()
+        os.environ["APP_ENVIRONMENT"] = "production"
+        try:
+            with override_settings(DEBUG=True):
+                self.assertEqual(detectar()["environment"], "PRODUCTION")
+        finally:
+            del os.environ["APP_ENVIRONMENT"]
+
+
+class InteligenciaTests(TestCase):
+    def test_explain_recusa_escrita_e_multiplas_instrucoes(self):
+        from agent_lab.db_intel import ConsultaRecusada, validar_select
+
+        for ruim in (
+            "DELETE FROM x",
+            "select 1; drop table x",
+            "WITH a AS (DELETE FROM x RETURNING *) SELECT * FROM a",
+            "update x set y=1",
+        ):
+            with self.assertRaises(ConsultaRecusada, msg=ruim):
+                validar_select(ruim)
+        self.assertEqual(validar_select("select 'drop' as texto;"), "select 'drop' as texto")
+
+    def test_contrato_detecta_campo_removido_e_tipo_alterado(self):
+        from agent_lab.api_intel import comparar, inferir
+
+        antes = {"/x/": {"schema": inferir({"results": [{"id": 1, "nome": "a"}], "total": 1})}}
+        depois = {"/x/": {"schema": inferir({"results": [{"id": "1"}], "total": 1})}}
+        quebras, _ = comparar(depois, antes)
+        problemas = {q["problem"] for q in quebras}
+        self.assertIn("campo removido: results.[].nome", problemas)
+        self.assertIn("tipo mudou em results.[].id: integer → string", problemas)
+
+    def test_consultas_devolvem_fonte(self):
+        from agent_lab import query
+
+        r = query.route("/viagens/oficios/")
+        self.assertEqual(r["name"], "viagens_oficios:lista")
+        self.assertTrue(any("views.py" in s for s in r["sources"]))
+        self.assertEqual(query.model("viagens_oficios.Oficio")["model"], "viagens_oficios.Oficio")
+        self.assertGreaterEqual(query.known_problems("P1")["count"], 1)
+
+    def test_seed_sempre_ancorado(self):
+        from solicitacoes.models import SolicitacaoEvento
+
+        Semeador("small").executar()
+        criados = {d.date() for d in SolicitacaoEvento.objects.values_list("criado_em", flat=True)}
+        self.assertEqual(criados, {ANCORA})
+
+    def test_cenario_sob_medida(self):
+        import tempfile as tf
+
+        from agent_lab import seed
+
+        with tf.TemporaryDirectory() as d, override_settings(BASE_DIR=Path(d)):
+            dados = seed.criar_cenario("so-viagens", volume=2, modules=["viagens_cadastros"])
+            self.assertEqual(seed.carregar_cenario("so-viagens")["modules"], ["viagens_cadastros"])
+            rel, erros = Semeador("so-viagens", custom=dados).executar()
+            self.assertEqual(erros, {})
+            self.assertNotIn("solicitacoes_evento", rel)

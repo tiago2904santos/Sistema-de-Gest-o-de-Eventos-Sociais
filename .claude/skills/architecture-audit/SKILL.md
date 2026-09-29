@@ -27,3 +27,15 @@ Auditar a arquitetura do sistema (camadas, acoplamento entre apps, ciclos, front
 ## Pronto quando
 
 Todo ciclo e toda fronteira violada citados com evidência (arquivo/aresta). Registrar decisões/descobertas em `docs/agent/memory/`.
+
+## Ferramentas MCP (project-mcp)
+
+`inventory_get_dependency_graph`, `audit_static`, `db_audit`, `knowledge_search_architecture` — ver `docs/agent/mcp.md`.
+
+## Exemplo
+
+Ciclo de 19 apps em `core` → achado ARCHITECTURE P3 citando `reports/architecture/dependency-graph.json`.
+
+## Se falhar
+
+Ferramenta MCP indisponível → use o equivalente de CLI (`python scripts/agent/lab.py …`, `manage.py agent_query …`, `npx playwright test …`). Lab fora do ar → `lab_start`/`npm run agent:serve`. Resultado inesperado → `agent-self-diagnosis`. Nunca conclua sem evidência.

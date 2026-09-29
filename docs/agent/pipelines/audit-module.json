@@ -1,0 +1,68 @@
+{
+  "name": "audit-module",
+  "description": "Auditar um módulo inteiro com evidência.",
+  "phases": [
+    {
+      "phase": "DISCOVER",
+      "agent": "product-discovery-agent",
+      "skills": [
+        "product-discovery"
+      ],
+      "tools": [
+        "project_inspect_permission",
+        "inventory_get_ui_inventory",
+        "inventory_get_migration_status"
+      ],
+      "exit_criteria": "Rotas/páginas/formulários do módulo listados (routes.json filtrado pelo namespace)."
+    },
+    {
+      "phase": "RUNTIME AUDIT",
+      "agent": "ux-research-agent",
+      "skills": [
+        "page-audit",
+        "ui-audit"
+      ],
+      "tools": [
+        "audit_page",
+        "audit_table",
+        "audit_form",
+        "audit_navigation",
+        "audit_performance"
+      ],
+      "exit_criteria": "Cada página-chave do módulo auditada em desktop e mobile."
+    },
+    {
+      "phase": "STATIC/DATA AUDIT",
+      "agent": "database-agent",
+      "skills": [
+        "database-review",
+        "codebase-audit"
+      ],
+      "tools": [
+        "audit_static",
+        "db_audit",
+        "db_find_anomalies",
+        "api_check_contracts"
+      ],
+      "exit_criteria": "Achados estruturais do módulo."
+    },
+    {
+      "phase": "REPORT",
+      "agent": "documentation-agent",
+      "skills": [],
+      "tools": [
+        "report_generate_audit_report"
+      ],
+      "exit_criteria": "Relatório priorizado + known-problems atualizado."
+    },
+    {
+      "phase": "VERIFY",
+      "agent": "final-verifier",
+      "skills": [],
+      "tools": [
+        "knowledge_search_known_problems"
+      ],
+      "exit_criteria": "Cada P0–P2 reproduzido por ferramenta."
+    }
+  ]
+}

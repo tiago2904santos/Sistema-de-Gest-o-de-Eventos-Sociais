@@ -1,0 +1,53 @@
+{
+  "name": "rewrite-component",
+  "description": "Reescrever um componente sem quebrar consumidores.",
+  "phases": [
+    {
+      "phase": "DISCOVER",
+      "agent": "frontend-architect",
+      "skills": [
+        "component-contract"
+      ],
+      "tools": [
+        "project_inspect_component",
+        "inventory_get_component_usage"
+      ],
+      "exit_criteria": "Contrato atual e todos os usos."
+    },
+    {
+      "phase": "SPECIMENS",
+      "agent": "frontend-implementer",
+      "skills": [
+        "component-audit"
+      ],
+      "tools": [
+        "inventory_get_specimens",
+        "audit_component"
+      ],
+      "exit_criteria": "Espécimes cobrindo todos os estados + baseline."
+    },
+    {
+      "phase": "IMPLEMENT",
+      "agent": "frontend-implementer",
+      "skills": [
+        "refactor-component"
+      ],
+      "tools": [
+        "git_create_checkpoint"
+      ],
+      "exit_criteria": "Contrato preservado ou migração de usos."
+    },
+    {
+      "phase": "VERIFY",
+      "agent": "qa-agent",
+      "skills": [
+        "visual-regression"
+      ],
+      "tools": [
+        "testing_run_visual_tests",
+        "audit_component"
+      ],
+      "exit_criteria": "Diff zero ou intencional em espécimes e páginas consumidoras."
+    }
+  ]
+}
