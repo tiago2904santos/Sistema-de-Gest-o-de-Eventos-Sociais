@@ -81,7 +81,7 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
             self.client.patch(url_bloco, data=json.dumps({'versao': '', 'valores': {'conteudo': 'Parágrafo reescrito.'}}), content_type='application/json')
         # O histórico mora no editor do documento, embutido no fim do formulário,
         # em linguagem do documento: rótulo, de → para e "Voltar a este valor" (m116).
-        r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
+        r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]) + '?modo=campos')
         self.assertContains(r, 'Editor documental')
         self.assertContains(r, 'Motivo da viagem:')
         self.assertContains(r, '<s>Missão F4</s> → <b>Diligência</b>')
@@ -206,7 +206,7 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
         self.assertEqual(self.patch(o, 'motivo', {'motivo': 'x'}).status_code, 403)
         folha = self.client.get(reverse('viagens_oficios:documento_folha', args=[o.pk])).content.decode()
         self.assertNotIn('data-doc-campo', folha)
-        pagina = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
+        pagina = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]) + '?modo=campos')
         self.assertNotContains(pagina, 'data-de-editor')
 
     def test_operador_ve_a_folha_marcada_e_o_painel(self):
@@ -215,7 +215,7 @@ class EditorDeCamposTests(CenarioOficioMixin, TestCase):
         for chave in ['motivo', 'protocolo', 'data_criacao', 'servidores', 'custeio', 'porte_transporte_armas']:
             self.assertIn(f'data-doc-campo="{chave}"', folha)
         self.assertIn('data-doc-campo="roteiro"', folha)  # o roteiro também: o balão leva ao editor de roteiros
-        pagina = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
+        pagina = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]) + '?modo=campos')
         self.assertContains(pagina, 'data-de-editor')
         self.assertContains(pagina, 'data-de-abrir="motivo"')
 
@@ -344,7 +344,7 @@ class PendenciasNavegaveisTests(CenarioOficioMixin, TestCase):
         navegaveis = vinculo_do_tipo('oficio').pendencias_navegaveis(o)
         self.assertEqual([(p['texto'], p['campo'], p['origem']) for p in navegaveis],
                          [('Informe o protocolo.', 'protocolo', 'oficio'), ('Informe o motivo.', 'motivo', 'oficio')])
-        r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]))
+        r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]) + '?modo=campos')
         self.assertContains(r, 'class="dc-aviso__ir" data-de-abrir="motivo" data-de-origem="oficio"')
         self.assertContains(r, 'data-de-proximo-vazio')
         # Sem quem assina, a folha traz a lacuna marcada para a navegação.
@@ -368,12 +368,12 @@ class TextosProntosTests(CenarioOficioMixin, TestCase):
         # Campo sem modelos: lista vazia; campo fora do registro: 404.
         self.assertEqual(self.client.get(reverse("documentos:editor_textos", args=["oficio", o.pk, "protocolo"])).json()["textos"], [])
         self.assertEqual(self.client.get(reverse("documentos:editor_textos", args=["oficio", o.pk, "nada"])).status_code, 404)
-        r = self.client.get(reverse("documentos:editor_embutido", args=["oficio", o.pk]))
+        r = self.client.get(reverse("documentos:editor_embutido", args=["oficio", o.pk]) + "?modo=campos")
         self.assertContains(r, 'data-de-textos-campos="motivo"')
         self.assertContains(r, "Inserir texto pronto")
 
     def test_sem_modelos_o_menu_nao_aparece(self):
         o = self.criar()
-        r = self.client.get(reverse("documentos:editor_embutido", args=["oficio", o.pk]))
+        r = self.client.get(reverse("documentos:editor_embutido", args=["oficio", o.pk]) + "?modo=campos")
         self.assertContains(r, 'data-de-textos-campos=""')
         self.assertNotContains(r, "Inserir texto pronto")

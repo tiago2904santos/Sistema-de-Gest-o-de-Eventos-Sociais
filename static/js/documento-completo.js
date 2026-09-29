@@ -8,24 +8,44 @@
 (function () {
   'use strict';
 
-  var raiz = document.querySelector('[data-dcp]');
-  if (!raiz || raiz.dataset.dcpLigado) return;
+  if (window.DocCompletoMontar) return;
+
+  /* `raiz`: a tela própria ([data-dcp]) ou o visualizador inline
+     ([data-de-completo], m142). Inline não há "Salvar versão": o que se
+     escreve na folha é gravado sozinho, sem recarregar a página. */
+  function montar(raiz) {
+  if (!raiz || raiz.dataset.dcpLigado) return null;
   raiz.dataset.dcpLigado = '1';
 
+  var inline = raiz.hasAttribute('data-de-completo');
   var quadro = raiz.querySelector('[data-dcp-folha]');
-  var editavel = raiz.hasAttribute('data-dcp-editavel');
+  var editavel = inline || raiz.hasAttribute('data-dcp-editavel');
   var estado = raiz.getAttribute('data-dcp-estado') || '';
   var salvo = raiz.querySelector('[data-dcp-salvo-texto]');
   var gravar = raiz.querySelector('[data-dcp-gravar]');
   var alterado = false;
+  var salvando = false;
+  var espera = null;
+  var ESPERA_MS = 1500;
   var tokenCsrf = document.querySelector('input[name="csrfmiddlewaretoken"]');
 
   function doc() { return quadro && quadro.contentDocument; }
 
   function marcar(texto, erro) {
+    if (inline) raiz.toggleAttribute('data-dcp-pendente', alterado);
     if (!salvo) return;
     salvo.textContent = texto;
     salvo.parentNode.setAttribute('data-estado', erro ? 'erro' : (alterado ? 'andamento' : ''));
+  }
+
+  // Alterou: inline, grava sozinho um instante depois da última tecla.
+  function mudou() {
+    alterado = true;
+    marcar(inline ? 'Salvando…' : 'Alterações não salvas');
+    ajustarAltura();
+    if (!inline) return;
+    clearTimeout(espera);
+    espera = setTimeout(salvar, ESPERA_MS);
   }
 
   function regioes() {
@@ -42,6 +62,7 @@
   }
 
   function ajustarAltura() {
+    if (inline) return;  // inline, o palco (viagens-documento.js) mede a folha
     var d = doc();
     if (!d || !d.documentElement) return;
     quadro.style.height = Math.max(d.documentElement.scrollHeight, 400) + 'px';
@@ -58,11 +79,7 @@
       r.el.setAttribute('spellcheck', 'true');
     });
     try { d.execCommand('styleWithCSS', false, false); } catch (e) { /* navegador sem o comando */ }
-    d.addEventListener('input', function () {
-      alterado = true;
-      marcar('Alterações não salvas');
-      ajustarAltura();
-    });
+    d.addEventListener('input', mudou);
     d.addEventListener('keydown', function (ev) {
       if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 's') {
         ev.preventDefault();
@@ -82,7 +99,7 @@
 
   if (quadro) {
     quadro.addEventListener('load', ligarFolha);
-    if (quadro.contentDocument && quadro.contentDocument.readyState === 'complete') ligarFolha();
+    if (quadro.contentDocument && quadro.contentDocument.readyState === 'complete' && quadro.contentDocument.body && quadro.contentDocument.body.children.length) ligarFolha();
     window.addEventListener('resize', ajustarAltura);
   }
 
@@ -90,9 +107,7 @@
     var d = doc();
     if (!d) return;
     d.execCommand(nome, false, valor || null);
-    alterado = true;
-    marcar('Alterações não salvas');
-    ajustarAltura();
+    mudou();
   }
 
   raiz.querySelectorAll('[data-dcp-cmd]').forEach(function (botao) {
@@ -159,9 +174,7 @@
       });
       if (!tab.querySelector('td, th')) tab.parentNode.removeChild(tab);
     }
-    alterado = true;
-    marcar('Alterações não salvas');
-    ajustarAltura();
+    mudou();
   }
 
   raiz.querySelectorAll('[data-dcp-tabela]').forEach(function (botao) {
@@ -188,6 +201,11 @@
 
   function salvar() {
     if (!editavel) return;
+    clearTimeout(espera);
+    espera = null;
+    if (salvando) { espera = setTimeout(salvar, ESPERA_MS); return; }
+    if (inline && !alterado) return;
+    salvando = true;
     var corpo = { estado: estado, regioes: {} };
     regioes().forEach(function (r) { corpo.regioes[r.nome] = conteudo(r.el); });
     if (gravar) gravar.disabled = true;
@@ -204,18 +222,28 @@
     }).then(function (resposta) {
       return resposta.json().catch(function () { return { ok: false }; });
     }).then(function (dados) {
+      salvando = false;
       if (gravar) gravar.disabled = false;
       if (!dados.ok) {
         marcar(dados.mensagem || 'Não foi possível salvar.', true);
-        if (dados.mensagem) window.alert(dados.mensagem);
+        if (dados.mensagem && !inline) window.alert(dados.mensagem);
         return;
       }
       estado = String(dados.estado);
+      raiz.setAttribute('data-dcp-estado', estado);
+      if (inline) {
+        // Inline não recarrega: quem digita continua de onde estava.
+        if (espera) { marcar('Salvando…'); return; }
+        alterado = false;
+        marcar('Versão editada salva');
+        return;
+      }
       alterado = false;
       // Recarrega para o histórico e a folha mostrarem o que foi gravado
       // (já sanitizado).
       window.location.reload();
     }).catch(function () {
+      salvando = false;
       if (gravar) gravar.disabled = false;
       marcar('Sem conexão: nada foi salvo.', true);
     });
@@ -223,10 +251,26 @@
 
   if (gravar) gravar.addEventListener('click', salvar);
 
-  window.addEventListener('beforeunload', function (ev) {
+  function aoSair(ev) {
     if (alterado) { ev.preventDefault(); ev.returnValue = ''; }
-  });
+  }
+  window.addEventListener('beforeunload', aoSair);
   raiz.querySelectorAll('form').forEach(function (form) {
     form.addEventListener('submit', function () { alterado = false; });
   });
+
+  return {
+    pendente: function () { return alterado; },
+    // Fechar o cartão grava o que falta.
+    desmontar: function () {
+      if (alterado && !salvando) salvar();
+      window.removeEventListener('beforeunload', aoSair);
+      window.removeEventListener('resize', ajustarAltura);
+    }
+  };
+  }
+
+  window.DocCompletoMontar = montar;
+  var tela = document.querySelector('[data-dcp]');
+  if (tela) montar(tela);
 })();

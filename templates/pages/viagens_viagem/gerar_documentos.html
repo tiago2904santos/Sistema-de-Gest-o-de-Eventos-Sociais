@@ -84,11 +84,26 @@
               <button type="submit" name="acao" value="remover-{{ b.i }}" class="btn--secundaria btn--com-icone" formnovalidate>{% include "components/icon.html" with nome="trash" %}Remover</button>
             {% endif %}
           </header>
-          <div class="section-card__corpo g-form g-form--1">
-            {% include "components/v32/multi_pick.html" with name=b.nome_servidores label="Equipe" placeholder="Buscar por nome, cargo ou unidade" opcoes=b.servidores vazio="Nenhum servidor cadastrado." vazio_escolhidos="Os servidores deste ofício aparecem aqui." %}
-            <div class="g-form g-form--2">
-              {% include "components/select.html" with name=b.nome_motorista label="Motorista" opcoes=b.motoristas pesquisavel=True permitir_vazio=True placeholder="Quem dirige (opcional)" selecionado=b.motorista ajuda="Se não estiver em nenhuma equipe, entra na deste ofício. Se viaja em outro ofício, aquele vira a referência dele." %}
-              {% include "components/select.html" with name=b.nome_viatura label="Viatura" opcoes=b.viaturas pesquisavel=True permitir_vazio=True placeholder="Viatura (opcional)" selecionado=b.viatura %}
+          <div class="section-card__corpo">
+            {# As listas da tela do ofício: busca em cima, as sugeridas no topo com o chip do porquê. #}
+            <div class="ofc-grupo">
+              <div class="ofc-grupo__cabeca"><strong>Equipe</strong></div>
+              <div class="ofc-grupo__corpo">
+                {% include "components/v32/lista_escolha.html" with name=b.nome_servidores label="Servidores" rotulo_busca="Buscar servidor" rotulo_oculto=True icone="user" opcoes=b.servidores multipla=True placeholder="Buscar por nome, CPF, cargo ou unidade" vazio="Nenhum servidor cadastrado." sem_resultado="Nenhum servidor encontrado para a busca." %}
+              </div>
+            </div>
+            <div class="ofc-grupo">
+              <div class="ofc-grupo__cabeca"><strong>Motorista</strong></div>
+              <div class="ofc-grupo__corpo">
+                {% include "components/v32/lista_escolha.html" with name=b.nome_motorista label="Motorista" rotulo_busca="Buscar motorista" rotulo_oculto=True icone="volante" opcoes=b.motoristas selecionado=b.motorista placeholder="Quem dirige (opcional): buscar por nome" vazio="Nenhum servidor cadastrado." sem_resultado="Nenhum servidor encontrado para a busca." %}
+                <p class="form-ajuda">Se não estiver em nenhuma equipe, entra na deste ofício. Se viaja em outro ofício, aquele vira a referência dele.</p>
+              </div>
+            </div>
+            <div class="ofc-grupo">
+              <div class="ofc-grupo__cabeca"><strong>Viatura</strong></div>
+              <div class="ofc-grupo__corpo">
+                {% include "components/v32/lista_escolha.html" with name=b.nome_viatura label="Viaturas" rotulo_busca="Buscar viatura" rotulo_oculto=True icone="truck" opcoes=b.viaturas selecionado=b.viatura placeholder="Buscar por placa ou modelo" vazio="Nenhuma viatura cadastrada." sem_resultado="Nenhuma viatura encontrada para a busca." %}
+              </div>
             </div>
           </div>
         </section>
@@ -107,10 +122,11 @@
           </div>
         </header>
         <div class="section-card__corpo vg-gerar__opcoes">
-          <label class="form-label"><input type="checkbox" checked disabled> Um ofício para cada equipe acima, com o roteiro e o motivo da viagem</label>
-          <label class="form-label"><input type="checkbox" name="gerar_termos" value="1"{% if opcoes.termos %} checked{% endif %}> Termos de autorização de cada servidor (menos quem é da unidade emissora)</label>
-          <label class="form-label"><input type="checkbox" name="gerar_ordem" value="1"{% if opcoes.ordem %} checked{% endif %}{% if ordem_existente %} disabled{% endif %}> Ordem de serviço com toda a equipe e os ofícios{% if ordem_existente %} — a viagem já tem a {{ ordem_existente.numero_formatado }}{% endif %}</label>
-          <label class="form-label"><input type="checkbox" name="gerar_plano" value="1"{% if opcoes.plano %} checked{% endif %}{% if plano_existente %} disabled{% endif %}> Plano de trabalho{% if plano_existente %} — a viagem já tem o {{ plano_existente.numero_formatado }}{% endif %}</label>
+          <p class="form-ajuda">{% include "components/icon.html" with nome="check" %} Um ofício para cada equipe acima, com o roteiro e o motivo da viagem.</p>
+          {% include "components/v32/cartoes_escolha.html" with name="gerar" tipo="checkbox" label="Gerar também" opcoes=documentos_opcoes %}
+          {% if ordem_existente or plano_existente %}
+            <p class="form-ajuda">A viagem já tem{% if ordem_existente %} a {{ ordem_existente.numero_formatado }}{% endif %}{% if ordem_existente and plano_existente %} e{% endif %}{% if plano_existente %} o Plano de Trabalho {{ plano_existente.numero_formatado }}{% endif %}: {% if ordem_existente and plano_existente %}eles não são alterados{% else %}não é alterado{% endif %}.</p>
+          {% endif %}
         </div>
       </section>
 
@@ -123,6 +139,6 @@
 
 {% block extra_js %}
   {{ block.super }}
-  <script src="{% estatico 'js/multi-pick.js' %}" defer></script>
+  <script src="{% estatico 'js/lista-escolha.js' %}" defer></script>
   <script src="{% estatico 'js/viagens-gerar-documentos.js' %}" defer></script>
 {% endblock %}

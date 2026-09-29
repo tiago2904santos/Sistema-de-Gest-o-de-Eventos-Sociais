@@ -20,7 +20,15 @@ class PreviaDoDocumentoTests(CenarioOficioMixin, TestCase):
         o = self.criar()
         r = self.embutido(o)
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, reverse('documentos:editor_folha', args=['oficio', o.pk]))
+        # Por padrão a folha já é o editor completo (m142); "Editar por campos" volta aos balões.
+        self.assertContains(r, 'data-de-completo')
+        self.assertContains(r, reverse('documentos:editor_completo_folha', args=['oficio', o.pk]))
+        self.assertContains(r, 'data-dcp-cmd="bold"')
+        self.assertContains(r, 'Editar por campos')
+        campos = self.client.get(reverse('documentos:editor_embutido', args=['oficio', o.pk]) + '?modo=campos')
+        self.assertContains(campos, reverse('documentos:editor_folha', args=['oficio', o.pk]))
+        self.assertContains(campos, 'data-de-editor')
+        self.assertNotContains(campos, 'data-de-completo')
         self.assertContains(r, 'data-de-pdf="' + reverse('viagens_oficios:gerar', args=[o.pk, 'oficio', 'pdf']))
         self.assertNotContains(r, 'dc-aviso')
         # Nada de <form> no editor: ele mora dentro do formulário do ofício.

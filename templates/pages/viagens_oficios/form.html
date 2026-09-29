@@ -193,14 +193,10 @@
             </div>
           </div>
 
-          {# Viatura: sugestões pela unidade da equipe e do motorista, busca e a escolhida. #}
+          {# Viatura: as sugeridas (unidade da equipe/motorista, condutor autorizado) no topo da lista, com o chip do porquê. #}
           <div class="ofc-grupo">
             <div class="ofc-grupo__cabeca"><strong>Viatura</strong></div>
             <div class="ofc-grupo__corpo">
-              <div class="ofc-sugestoes" data-ofc-sugestoes hidden>
-                <span class="form-label">Sugestões</span>
-                <div class="ofc-sugestoes__lista" data-ofc-sugestoes-lista></div>
-              </div>
               {# Lista como a dos ofícios no termo: busca em cima, viaturas embaixo; clicar escolhe e clicar de novo desfaz. #}
               {% include "components/v32/lista_escolha.html" with name="viatura" label="Viaturas" rotulo_busca="Escolher viatura" rotulo_oculto=True icone="truck" opcoes=dados.viaturas selecionado=v.viatura placeholder="Buscar por placa ou modelo" erros=e.viatura vazio="Nenhuma viatura cadastrada." sem_resultado="Nenhuma viatura encontrada para a busca." acao_url=dados.url_nova_viatura acao_rotulo="Nova viatura" %}
             </div>
