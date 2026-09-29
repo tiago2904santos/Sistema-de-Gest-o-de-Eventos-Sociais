@@ -29,7 +29,7 @@ from .vinculos import vinculo_do_tipo
 
 
 def contexto_da_pagina(request, vinculo, objeto) -> dict:
-    from .completo import situacao_da_edicao, url_do_editor_completo
+    from .completo import bloqueio, contexto_inline
 
     tipo = vinculo.tipo.value
     pode_editar = vinculo.pode_editar(request.user, objeto)
@@ -72,8 +72,10 @@ def contexto_da_pagina(request, vinculo, objeto) -> dict:
             # Pontos onde cabe um parágrafo livre (m123): o mesmo botão da barra os mostra.
             "tem_paragrafos": bool(paragrafos_do_tipo(vinculo.tipo)),
             # Editor completo (m057): o documento inteiro, editado à mão.
-            "url_completo": url_do_editor_completo(vinculo, objeto),
-            "edicao_completa": situacao_da_edicao(vinculo, objeto),
+            # Por padrão o visualizador já É o editor completo (m142): a folha
+            # inteira editável ali mesmo, salvando sozinha. "Editar por campos"
+            # (?modo=campos) volta aos balões de cada campo.
+            **contexto_inline(request, vinculo, objeto, bloqueio(vinculo, objeto, request.user)),
         },
     }
 

@@ -376,16 +376,30 @@ def _contexto_gerar_documentos(viagem, equipes, opcoes, erros):
     servidores = sorted(Servidor.objects.select_related("cargo", "unidade"),
                         key=lambda s: (-sugestoes.servidores[s.pk], s.nome))
     motoristas = sorted(servidores, key=lambda s: (-sugestoes.motoristas[s.pk], -sugestoes.servidores[s.pk], s.nome))
-    viaturas = sorted(Viatura.objects.all(), key=lambda v: (-sugestoes.viaturas[v.pk], v.placa))
+    viaturas = sorted(Viatura.objects.select_related("unidade").prefetch_related("motoristas"),
+                      key=lambda v: (-sugestoes.viaturas[v.pk], v.placa))
     ja_em_oficios = servidores_ja_em_oficios(viagem)
 
     def detalhes(s):
         partes = [str(s.cargo) if s.cargo_id else "", (s.unidade.sigla or s.unidade.nome) if s.unidade_id else ""]
         if s.pk in ja_em_oficios:
             partes.append(f"já no ofício {ja_em_oficios[s.pk].numero_formatado}")
-        elif sugestoes.servidores[s.pk]:
-            partes.append("costuma ir em viagens assim")
         return " · ".join(p for p in partes if p)
+
+    # As listas do ofício (lista_escolha): as sugeridas no topo, com o chip do porquê.
+    def opcao_servidor(s, escolhidos, chip):
+        return {"valor": str(s.pk), "rotulo": s.nome, "detalhes": detalhes(s), "selecionado": s.pk in escolhidos,
+                "chip": chip, "chip_tom": "atendido", "busca": s.cpf or "",
+                "dados": {"unidade": s.unidade_id or "", "iniciais": iniciais(s.nome)}}
+
+    def opcao_viatura(v):
+        unidade = (v.unidade.sigla or v.unidade.nome) if v.unidade_id else ""
+        return {"valor": str(v.pk), "rotulo": " — ".join(p for p in [v.placa_formatada, v.modelo] if p),
+                "detalhes": unidade, "busca": v.placa,
+                "chip": "Usada em viagens assim" if sugestoes.viaturas[v.pk] else "",
+                "chip_tom": "neutro",
+                "dados": {"unidade": v.unidade_id or "", "sigla": unidade,
+                          "motoristas": " ".join(str(m.pk) for m in v.motoristas.all())}}
 
     blocos = []
     for i, equipe in enumerate(equipes):
@@ -393,13 +407,25 @@ def _contexto_gerar_documentos(viagem, equipes, opcoes, erros):
         blocos.append({
             "i": i, "numero": i + 1,
             "nome_servidores": f"oficio-{i}-servidores", "nome_motorista": f"oficio-{i}-motorista", "nome_viatura": f"oficio-{i}-viatura",
-            "servidores": [{"valor": str(s.pk), "rotulo": s.nome, "detalhes": detalhes(s), "selecionado": s.pk in escolhidos,
-                            "dados": {"iniciais": iniciais(s.nome)}} for s in servidores],
-            "motoristas": [{"valor": str(s.pk), "rotulo": s.nome} for s in motoristas],
-            "viaturas": [{"valor": str(v.pk), "rotulo": " — ".join(p for p in [v.placa_formatada, v.modelo] if p)} for v in viaturas],
+            "servidores": [opcao_servidor(s, escolhidos, "Costuma ir" if sugestoes.servidores[s.pk] else "") for s in servidores],
+            "motoristas": [opcao_servidor(s, set(), "Costuma dirigir" if sugestoes.motoristas[s.pk] else "") for s in motoristas],
+            "viaturas": [opcao_viatura(v) for v in viaturas],
             "motorista": str(equipe.motorista.pk) if equipe.motorista else "",
             "viatura": str(equipe.viatura.pk) if equipe.viatura else "",
         })
+    # Os documentos a gerar, como os cartões de necessidade da OS.
+    ordem_existente = viagem.ordens_servico.filter(cancelado=False).first()
+    plano_existente = viagem.planos_trabalho.filter(cancelado=False).first()
+    documentos_opcoes = [
+        {"valor": "termos", "rotulo": "Termos de autorização", "icone": "document",
+         "dica": "Um por servidor, menos quem é da unidade emissora.", "marcado": opcoes.get("termos")},
+    ]
+    if ordem_existente is None:
+        documentos_opcoes.append({"valor": "ordem", "rotulo": "Ordem de serviço", "icone": "checklist",
+                                  "dica": "Com toda a equipe e os ofícios.", "marcado": opcoes.get("ordem")})
+    if plano_existente is None:
+        documentos_opcoes.append({"valor": "plano", "rotulo": "Plano de trabalho", "icone": "calendar",
+                                  "dica": "Com as atividades e o efetivo da solicitação.", "marcado": opcoes.get("plano")})
     contador = contador_de_servidores(viagem)
     return {
         "viagem": viagem, "titulo": titulo_da_viagem(viagem), "blocos": blocos, "quantidade": len(blocos),
@@ -409,8 +435,9 @@ def _contexto_gerar_documentos(viagem, equipes, opcoes, erros):
         "ja_em_oficios": sorted(ja_em_oficios),
         "oficios_existentes": list(viagem.oficios.filter(cancelado=False).prefetch_related("servidores").order_by("pk")),
         "tem_roteiro": viagem.roteiros.filter(cancelado=False).exists(),
-        "ordem_existente": viagem.ordens_servico.filter(cancelado=False).first(),
-        "plano_existente": viagem.planos_trabalho.filter(cancelado=False).first(),
+        "ordem_existente": ordem_existente,
+        "plano_existente": plano_existente,
+        "documentos_opcoes": documentos_opcoes,
         "url_painel": reverse("viagens_viagem:etapa", args=[viagem.pk, 3]),
         "url_roteiro": reverse("viagens_viagem:etapa", args=[viagem.pk, 2]),
         "aprendido": _o_que_o_historico_diz(viagem, sugestoes),
@@ -469,7 +496,8 @@ def gerar_documentos(request, pk):
         except (TypeError, ValueError):
             quantidade = 1
         equipes = _ler_equipes(request.POST, quantidade)
-        opcoes = {chave: bool(request.POST.get(f"gerar_{chave}")) for chave in ("termos", "ordem", "plano")}
+        marcados = set(request.POST.getlist("gerar"))
+        opcoes = {chave: chave in marcados or bool(request.POST.get(f"gerar_{chave}")) for chave in ("termos", "ordem", "plano")}
         acao = request.POST.get("acao", "")
         if acao == "adicionar":
             equipes.append(EquipeDoOficio(servidores=[]))

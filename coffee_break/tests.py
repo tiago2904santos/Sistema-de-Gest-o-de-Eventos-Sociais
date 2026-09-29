@@ -2003,7 +2003,7 @@ class VisualizadorDaOSTests(BaseCoffeeBreakTestCase):
     def test_editor_mostra_a_barra_e_a_folha_marcada(self):
         self.client.force_login(self.ascom)
         s = self.criar_solicitacao(numero="41/2026", local_entrega="1DP", responsavel_recebimento="Ana")
-        editor = self.client.get(self._url("embutido", s))
+        editor = self.client.get(self._url("embutido", s) + "?modo=campos")
         self.assertEqual(editor.status_code, 200)
         self.assertContains(editor, "Tudo salvo")
         self.assertContains(editor, "Campos")
@@ -2274,7 +2274,7 @@ class Etapa2ComoEtapa1Tests(BaseCoffeeBreakTestCase):
         for chave in ("coffee_break_oficio", "coffee_break_certifico"):
             embutido = reverse("documentos:editor_embutido", args=[chave, self.s.pk])
             self.assertContains(resposta, f'data-de-embutir="{embutido}"')
-            editor = self.client.get(embutido)
+            editor = self.client.get(embutido + "?modo=campos")
             self.assertContains(editor, "O PDF ainda não pode ser emitido.")
             self.assertContains(editor, "Quebras de página")
             folha = self.client.get(reverse("documentos:editor_folha", args=[chave, self.s.pk])).content.decode()

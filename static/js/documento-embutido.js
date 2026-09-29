@@ -20,15 +20,16 @@
   function desmontar() {
     if (!atual) return;
     if (atual.editor) atual.editor.desmontar();
+    if (atual.completo) atual.completo.desmontar();
     if (atual.palco) atual.palco.desmontar();
     atual.alvo.innerHTML = '';
     atual = null;
   }
 
-  function carregar(alvo) {
-    if (atual && atual.alvo === alvo) return;
+  function carregar(alvo, deNovo) {
+    if (atual && atual.alvo === alvo && !deNovo) return;
     desmontar();
-    var instancia = { alvo: alvo, palco: null, editor: null };
+    var instancia = { alvo: alvo, palco: null, editor: null, completo: null };
     atual = instancia;
     alvo.innerHTML = '<p class="de-carregando">Carregando o documento…</p>';
     fetch(alvo.getAttribute('data-de-embutir'), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -40,6 +41,8 @@
         if (!raiz) return;
         if (window.DocPalcoMontar) instancia.palco = window.DocPalcoMontar(raiz);
         if (window.DocEditorMontar) instancia.editor = window.DocEditorMontar(raiz, instancia.palco);
+        // Por padrão a folha já é o editor completo (m142).
+        if (raiz.hasAttribute('data-de-completo') && window.DocCompletoMontar) instancia.completo = window.DocCompletoMontar(raiz);
       })
       .catch(function (codigo) {
         if (atual !== instancia) return;
@@ -98,6 +101,31 @@
       }
     });
 
+    // Trocar entre a folha inteira e os campos: o mesmo cartão, o outro modo.
+    var troca = evento.target.closest('[data-de-trocar-modo]');
+    if (troca && atual && atual.alvo.contains(troca)) {
+      evento.preventDefault();
+      if (atual.completo) atual.completo.desmontar();
+      atual.alvo.setAttribute('data-de-embutir', troca.getAttribute('data-de-trocar-modo'));
+      carregar(atual.alvo, true);
+      return;
+    }
+    // Voltar ao modelo sem sair do formulário (não cabe <form> dentro dele).
+    var modelo = evento.target.closest('[data-dcp-voltar-modelo]');
+    if (modelo && atual && atual.alvo.contains(modelo)) {
+      evento.preventDefault();
+      var raizModelo = atual.alvo.querySelector('[data-dcp-modelo]');
+      if (!raizModelo || !window.confirm('Voltar ao modelo? O documento volta a sair dos dados; a versão editada fica no histórico.')) return;
+      var tokenModelo = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      var alvoModelo = atual.alvo;
+      if (atual.completo) { atual.completo.desmontar(); atual.completo = null; }
+      fetch(raizModelo.getAttribute('data-dcp-modelo'), {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'X-CSRFToken': tokenModelo ? tokenModelo.value : '', 'X-Requested-With': 'XMLHttpRequest' }
+      }).then(function () { carregar(alvoModelo, true); });
+      return;
+    }
+
     var botao = evento.target.closest('[data-de-pdf]');
     if (!botao) return;
     evento.preventDefault();
@@ -127,7 +155,7 @@
     var quadro = atual.alvo.querySelector('iframe');
     if (!quadro || !quadro.contentWindow) return;
     // Quem está digitando dentro do documento não perde o que digita.
-    if (document.activeElement === quadro) { clearTimeout(recarga); recarga = setTimeout(recarregarFolha, 1500); return; }
+    if (document.activeElement === quadro || (atual.completo && atual.completo.pendente())) { clearTimeout(recarga); recarga = setTimeout(recarregarFolha, 1500); return; }
     var janela = quadro.contentWindow;
     var rolagem = janela.scrollY || 0;
     quadro.addEventListener('load', function () {

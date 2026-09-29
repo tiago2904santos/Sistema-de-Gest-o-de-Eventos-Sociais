@@ -65,6 +65,9 @@
   function paginar() {
     var doc = documentoDaFolha();
     if (!doc || !doc.body) return;
+    // Editor completo (m142): a folha é uma só, editável; repaginar moveria
+    // os blocos para fora da região que se grava.
+    if (raiz.hasAttribute('data-de-completo')) return;
     var folha = desfazerPaginas(doc);
     if (!folha) return;
     var corpo = folha.querySelector('.doc-corpo');
