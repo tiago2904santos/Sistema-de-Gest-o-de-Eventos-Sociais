@@ -94,6 +94,39 @@ def url_do_editor_completo(vinculo, objeto) -> str:
     return _url(vinculo, objeto, "editor_completo")
 
 
+def _com_modo(request, modo):
+    params = request.GET.copy()
+    params.pop("modo", None)
+    if modo:
+        params["modo"] = modo
+    consulta = params.urlencode()
+    return f"{request.path}?{consulta}" if consulta else request.path
+
+
+def contexto_inline(request, vinculo, objeto, motivo_bloqueio) -> dict:
+    """O editor completo dentro do visualizador inline (m142): o modo padrão
+    sempre que o documento se edita; "campos" é o editor por balões."""
+    completo = not motivo_bloqueio and request.GET.get("modo") != "campos"
+    estado = None
+    if completo:
+        tipo_doc, dono, variante = _chaves(vinculo, objeto)
+        estado = edicao.estado(tipo_doc, dono, variante)
+    return {
+        "url_completo": url_do_editor_completo(vinculo, objeto),
+        "edicao_completa": situacao_da_edicao(vinculo, objeto),
+        "modo_completo": completo,
+        "pode_completo": not motivo_bloqueio,
+        "completo": {
+            "url_folha": _url(vinculo, objeto, "editor_completo_folha"),
+            "url_salvar": _url(vinculo, objeto, "editor_completo_salvar"),
+            "url_modelo": _url(vinculo, objeto, "editor_completo_modelo"),
+            "estado": estado.pk if estado else "",
+        },
+        "url_modo_campos": _com_modo(request, "campos"),
+        "url_modo_completo": _com_modo(request, ""),
+    }
+
+
 @require_GET
 def pagina(request, tipo, pk):
     vinculo, objeto = _carregar(request, tipo, pk)

@@ -29,6 +29,11 @@
 .dcp-ajuda { margin: 0 0 var(--s3); font-size: 12.5px; color: var(--n-500); }
 
 @media (max-width: 900px) {
-  .de-area { flex-direction: column; }
+  .dcp .de-area { flex-direction: column; }
   .dcp-historico { position: static; width: auto; margin: var(--s4); }
 }
+
+/* No visualizador inline (m142): a folha inteira já é editável ali. */
+.de-app--completo .de-barra { flex-wrap: wrap; }
+.de-app--completo .de-salvo[data-estado="andamento"] { color: var(--n-600); }
+.de-app--completo .de-salvo[data-estado="erro"] { color: var(--erro-t, #b42318); }

@@ -15,10 +15,14 @@
   O que é de cada documento vem em `doc`, de
   `documentos.editor.pagina.contexto_da_pagina`.
 {% endcomment %}
-<div class="de-app de-app--embutido"{% if doc.pode_editar %} data-de-editor data-de-url="{{ doc.api.campo }}" data-de-url-bloco="{{ doc.api.bloco }}" data-de-url-quebra="{{ doc.api.quebra }}" data-de-url-textos="{{ doc.api.textos }}" data-de-url-paragrafo="{{ doc.api.paragrafo }}" data-de-textos-campos="{{ doc.textos_prontos }}" data-de-url-presenca="{{ doc.url_presenca }}" data-de-versao="{{ doc.versao }}" data-de-principais="{{ doc.principais }}"{% endif %}>
+<div class="de-app de-app--embutido{% if doc.modo_completo %} de-app--completo{% endif %}"{% if doc.modo_completo %} data-de-completo data-dcp-salvar="{{ doc.completo.url_salvar }}" data-dcp-modelo="{{ doc.completo.url_modelo }}" data-dcp-estado="{{ doc.completo.estado }}"{% elif doc.pode_editar %} data-de-editor data-de-url="{{ doc.api.campo }}" data-de-url-bloco="{{ doc.api.bloco }}" data-de-url-quebra="{{ doc.api.quebra }}" data-de-url-textos="{{ doc.api.textos }}" data-de-url-paragrafo="{{ doc.api.paragrafo }}" data-de-textos-campos="{{ doc.textos_prontos }}" data-de-url-presenca="{{ doc.url_presenca }}" data-de-versao="{{ doc.versao }}" data-de-principais="{{ doc.principais }}"{% endif %}>
   {# Barra de ferramentas. Formatação não entra: a letra e o layout são os do modelo oficial. #}
   <div class="de-barra" role="toolbar" aria-label="Ferramentas do documento">
-    {% if doc.pode_editar %}
+    {% if doc.modo_completo %}
+      {# Editor completo (m142): a barra de um editor de texto, sobre a folha inteira. #}
+      {% include "documentos/editor/_barra_completo.html" %}
+      <span class="de-barra__sep" aria-hidden="true"></span>
+    {% elif doc.pode_editar %}
       <div class="de-barra__grupo">
         <button type="button" class="de-icone" data-de-desfazer disabled title="Desfazer (Ctrl+Z)" aria-label="Desfazer">{% include "components/icon.html" with nome="undo" %}</button>
         <button type="button" class="de-icone" data-de-refazer disabled title="Refazer (Ctrl+Y)" aria-label="Refazer">{% include "components/icon.html" with nome="redo" %}</button>
@@ -37,7 +41,7 @@
       </select>
       <button type="button" class="de-icone" data-de-zoom-mais title="Aumentar o zoom" aria-label="Aumentar o zoom">{% include "components/icon.html" with nome="plus" %}</button>
     </div>
-    {% if doc.pode_editar %}
+    {% if doc.pode_editar and not doc.modo_completo %}
       <span class="de-barra__sep" aria-hidden="true"></span>
       <div class="de-barra__grupo">
         {% if doc.campos_menu %}
@@ -65,8 +69,12 @@
     {% endif %}
     <span class="de-barra__sep" aria-hidden="true"></span>
     <div class="de-barra__grupo">
-      {# Editor completo (m057): o documento inteiro, com textos fixos, cabeçalho, rodapé e tabelas. #}
-      <a class="de-texto-botao" href="{{ doc.url_completo }}" title="Editar livremente o documento inteiro, como num editor de texto">{% include "components/icon.html" with nome="document" %}Editar documento completo</a>
+      {# Dois jeitos de editar, no mesmo lugar: a folha inteira (padrão) ou campo a campo. #}
+      {% if doc.modo_completo %}
+        <button type="button" class="de-texto-botao" data-de-trocar-modo="{{ doc.url_modo_campos }}" title="Editar campo a campo, com o documento acompanhando os dados">{% include "components/icon.html" with nome="pencil" %}Editar por campos</button>
+      {% elif doc.pode_completo %}
+        <button type="button" class="de-texto-botao" data-de-trocar-modo="{{ doc.url_modo_completo }}" title="Editar livremente o documento inteiro, como num editor de texto">{% include "components/icon.html" with nome="document" %}Editar documento completo</button>
+      {% endif %}
     </div>
     <span class="de-barra__sep" aria-hidden="true"></span>
     <div class="de-barra__grupo">
@@ -85,7 +93,9 @@
           <span class="de-paginas" data-de-paginas="{{ doc.url_paginas }}" hidden>{% include "components/icon.html" with nome="document" %}<span data-de-paginas-texto></span></span>
         {% endif %}
       {% endif %}
-      {% if doc.pode_editar %}
+      {% if doc.modo_completo %}
+        <span class="de-salvo" data-dcp-salvo aria-live="polite" title="O que você escreve na folha é gravado sozinho">{% include "components/icon.html" with nome="cloud-check" %}<span data-dcp-salvo-texto>{% if doc.edicao_completa.vigente %}Versão editada{% else %}Acompanhando os dados{% endif %}</span></span>
+      {% elif doc.pode_editar %}
         {# Quem mais está no documento (m125): preenchido pelo aviso de presença. #}
         <span class="de-presenca" data-de-presenca aria-live="polite" hidden>{% include "components/icon.html" with nome="users" %}<span data-de-presenca-texto></span></span>
         <span class="de-salvo" data-de-salvo aria-live="polite" title="As alterações são gravadas enquanto você edita">{% include "components/icon.html" with nome="cloud-check" %}<span data-de-salvo-texto>Tudo salvo</span></span>
@@ -106,7 +116,7 @@
           <strong>Este documento foi editado por inteiro.</strong>
           É a versão editada que sai no PDF, no DOCX, no pacote e nos envios; mudanças nos campos só entram voltando ao modelo.
         {% endif %}
-        <a href="{{ doc.url_completo }}">Abrir a versão editada, regenerar ou ver as versões</a>
+        {% if doc.pode_completo %}<button type="button" class="dc-aviso__ir" data-dcp-voltar-modelo>Voltar ao modelo (regenerar dos dados)</button> · {% endif %}<a href="{{ doc.url_completo }}">Ver as versões</a>
       </div>
     </div>
   {% endif %}
@@ -117,7 +127,7 @@
       <div>
         <strong>O PDF ainda não pode ser emitido.</strong>
         {# Pendência com trecho na folha vira botão: leva até ele e o abre (m117). #}
-        <ul class="dc-aviso__lista">{% for p in doc.pendencias %}<li>{% if p.campo and doc.pode_editar %}<button type="button" class="dc-aviso__ir" data-de-abrir="{{ p.campo }}" data-de-origem="{{ p.origem }}" title="Ir ao trecho no documento">{{ p.texto }}{% include "components/icon.html" with nome="arrow-right" %}</button>{% else %}{{ p.texto }}{% endif %}</li>{% endfor %}</ul>
+        <ul class="dc-aviso__lista">{% for p in doc.pendencias %}<li>{% if p.campo and doc.pode_editar and not doc.modo_completo %}<button type="button" class="dc-aviso__ir" data-de-abrir="{{ p.campo }}" data-de-origem="{{ p.origem }}" title="Ir ao trecho no documento">{{ p.texto }}{% include "components/icon.html" with nome="arrow-right" %}</button>{% else %}{{ p.texto }}{% endif %}</li>{% endfor %}</ul>
       </div>
     </div>
   {% endif %}
@@ -126,7 +136,7 @@
     <div class="de-palco" data-de-palco>
       {# A caixa tem o tamanho da folha já com o zoom; o quadro dentro dela é escalado. #}
       <div class="de-folha-caixa" data-de-folha-caixa>
-        <iframe class="dc-folha" src="{{ doc.url_folha }}" title="{{ doc.rotulo }}"></iframe>
+        <iframe class="dc-folha" src="{% if doc.modo_completo %}{{ doc.completo.url_folha }}{% else %}{{ doc.url_folha }}{% endif %}" title="{{ doc.rotulo }}"{% if doc.modo_completo %} data-dcp-folha{% endif %}></iframe>
       </div>
     </div>
 

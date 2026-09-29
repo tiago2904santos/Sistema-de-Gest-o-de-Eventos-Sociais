@@ -21,7 +21,8 @@ class EditorEmTodosOsDocumentosTests(CenarioOficioMixin, TestCase):
     # Utilitários
     def pagina(self, chave, pk, v=""):
         """O editor embutido (o que o cartão do formulário busca)."""
-        url = reverse("documentos:editor_embutido", args=[chave, pk]) + (f"?v={v}" if v else "")
+        # Estes testes são do editor por campos; o padrão é o editor completo (m142).
+        url = reverse("documentos:editor_embutido", args=[chave, pk]) + (f"?v={v}&modo=campos" if v else "?modo=campos")
         return self.client.get(url)
 
     def folha(self, chave, pk, v=""):

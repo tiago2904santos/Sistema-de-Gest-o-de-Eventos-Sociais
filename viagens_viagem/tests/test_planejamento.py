@@ -143,7 +143,7 @@ class TelaSoFaltaEquipeTests(CenarioViagem):
         self.assertContains(r, "Planejado pelo histórico")
         html = r.content.decode()
         self.assertLess(html.index("ZECA FREQUENTE"), html.index("ANA VIAGEM"))
-        self.assertIn("costuma ir em viagens assim", html)
+        self.assertIn("Costuma ir", html)
 
     def test_gerar_avisa_o_que_o_historico_preencheu(self):
         ModeloJustificativa.objects.create(nome="Prazo", texto="Justificativa de {destino}.", is_padrao=True)

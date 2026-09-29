@@ -101,6 +101,6 @@ class PresencaTests(CenarioOficioMixin, TestCase):
         self.assertEqual(marcar_presenca('oficio', self.oficio.pk, self.user), [])
 
     def test_a_pagina_do_editor_leva_a_url_da_presenca(self):
-        r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', self.oficio.pk]))
+        r = self.client.get(reverse('documentos:editor_embutido', args=['oficio', self.oficio.pk]) + '?modo=campos')
         self.assertContains(r, 'data-de-url-presenca=')
         self.assertContains(r, 'data-de-presenca')
