@@ -8,7 +8,7 @@ V3.2 (solicitações, cadastros), reaproveitado pelos módulos da ASCOM.
 from django import forms
 from django.core.paginator import Paginator
 
-ITENS_POR_PAGINA = 20
+ITENS_POR_PAGINA = 25
 
 
 def opcoes(iteravel):
@@ -96,7 +96,7 @@ def colunas_ordenaveis(request, pedido, colunas, ordenacoes):
 
 
 def trilha_de_situacoes(
-    request, filas, total_geral, icones, parametro="fila", descartar=()
+    request, filas, total_geral, icones, parametro="fila", descartar=(), rotulo_todas="Todas"
 ):
     """As filas de uma listagem como itens da trilha lateral (`cad_rail`).
 
@@ -105,6 +105,8 @@ def trilha_de_situacoes(
     `chave`, `rotulo` e `total`; `icones` mapeia chave -> ícone.
     `descartar` lista outros parâmetros que a troca de situação substitui
     (ex.: o `status` que veio de um cartão do Dashboard).
+    `rotulo_todas` concorda com o que a lista mostra: "Todas" as
+    solicitações, "Todos" os usuários.
     """
     parametros = request.GET.copy()
     parametros.pop("pagina", None)
@@ -122,7 +124,7 @@ def trilha_de_situacoes(
     return [
         {
             "slug": "todas",
-            "titulo": "Todas",
+            "titulo": rotulo_todas,
             "total": total_geral,
             "icone": "checklist",
             "url": url(),

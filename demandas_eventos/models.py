@@ -313,10 +313,19 @@ class DemandaEvento(models.Model):
 
     @property
     def periodo_evento_display(self):
-        """A coluna "Data do evento e hora (período)" como a planilha a lê."""
+        """A coluna "Data do evento e hora (período)" como a planilha a lê.
+
+        O texto livre da planilha só entra quando acrescenta algo: se já há
+        data estruturada e o texto tem números, ele é a mesma data/hora
+        escrita à mão ("10/12 13 as 13:00hs") e só repetiria o que está ao
+        lado. Texto sem números ("Presencial - Online") continua.
+        """
+        texto = (self.periodo_evento_texto or "").strip()
+        if texto and self.data_evento_display and any(c.isdigit() for c in texto):
+            texto = ""
         return " · ".join(
             parte
-            for parte in (self.data_evento_display, self.horario_display, self.periodo_evento_texto)
+            for parte in (self.data_evento_display, self.horario_display, texto)
             if parte
         )
 

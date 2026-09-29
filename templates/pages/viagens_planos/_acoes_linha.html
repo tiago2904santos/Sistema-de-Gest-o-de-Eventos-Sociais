@@ -21,6 +21,7 @@
         <a class="dd__i of-item" href="{% url 'documentos:editor_pagina' 'plano_trabalho' p.pk %}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar documento</b><small>Alterar o texto pela prévia A4</small></span></a>
       {% endif %}
       <a class="dd__i of-item" href="{{ l.url_editar }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar plano</b><small>Identificação, efetivo, diárias e atividades</small></span></a>
+      <div class="dd__s"></div>
       {% if p.cancelado %}
         <form method="post" action="{{ l.url_reativar }}">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
           <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>Reativar plano</b><small>Volta a valer com o mesmo número</small></span></button>

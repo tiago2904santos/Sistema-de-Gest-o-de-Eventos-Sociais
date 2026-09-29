@@ -257,7 +257,9 @@
       if (arg.view.type.indexOf("list") === 0) {
         return { html: '<span class="gca-ldia__n">' + arg.date.getDate() + '</span><span class="gca-ldia__s">' + MESES_CURTOS[arg.date.getMonth()] + ", " + DIAS_CURTOS[arg.date.getDay()] + "</span>" };
       }
-      return DIAS_CURTOS[arg.date.getDay()];
+      // No mês o cabeçalho é só o dia da semana e o FullCalendar monta a data
+      // em UTC: getDay() em UTC−3 recuava um dia ("sáb." sobre o domingo).
+      return DIAS_CURTOS[arg.dow != null ? arg.dow : arg.date.getDay()];
     },
     dayCellContent: function (arg) {
       if (arg.view.type === "dayGridMonth" && arg.date.getDate() === 1) return "1 de " + MESES_CURTOS[arg.date.getMonth()];
@@ -269,10 +271,13 @@
     eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
     nowIndicator: true,
     events: carregar,
+    // Enquanto o feed não chega a grade fica vazia: o aviso evita achar que
+    // não há nada no período.
+    loading: function (sim) { if (principal) principal.classList.toggle("is-carregando", sim); },
     eventClick: function (arg) {
       arg.jsEvent.preventDefault();
       if ((arg.event.extendedProps || {}).fundo) return; // feriado: não tem dossiê
-      abrir(arg.event);
+      abrir(arg.event, arg.el);
     },
     // "Criar aqui" (m135): clicar num dia ou arrastar sobre vários abre o
     // menu com as telas novas (agenda-extras.js); `end` vem exclusivo.
@@ -469,10 +474,28 @@
   var modal = $("ag-modal");
   var corpo = $("ag-modal-c");
   var ultimoFoco = null;
+  var idDoFoco = null;
+  function devolverFoco() {
+    var alvo = ultimoFoco;
+    if (alvo && !alvo.isConnected && idDoFoco) {
+      var ev = cal.getEventById(idDoFoco);
+      alvo = null;
+      document.querySelectorAll(".fc-event").forEach(function (el) {
+        if (!alvo && ev && el.fcSeg && el.fcSeg.eventRange && el.fcSeg.eventRange.def.publicId === idDoFoco) alvo = el;
+      });
+    }
+    if (alvo && alvo.focus) {
+      if (!alvo.hasAttribute("tabindex") && !alvo.getAttribute("href")) alvo.setAttribute("tabindex", "-1");
+      alvo.focus();
+    }
+  }
 
-  function abrir(ev) {
+  function abrir(ev, origem) {
     var p = ev.extendedProps || {};
-    ultimoFoco = document.activeElement;
+    // O clique do mouse não põe o foco na faixa do evento: guarda a própria
+    // faixa (e o id, porque a grade pode redesenhar enquanto o modal está aberto).
+    ultimoFoco = origem || document.activeElement;
+    idDoFoco = ev.id;
     corpo.innerHTML = '<p class="ag-m__carregando">Carregando…</p>';
     if (typeof modal.showModal === "function") { if (!modal.open) modal.showModal(); }
     else modal.setAttribute("open", "");
@@ -507,10 +530,10 @@
   function fechar() {
     if (modal.open && typeof modal.close === "function") modal.close();
     else modal.removeAttribute("open");
-    if (ultimoFoco && ultimoFoco.focus) ultimoFoco.focus();
+    devolverFoco();
   }
   // Clique no fundo escurecido fecha: o `dialog` recebe o clique, o miolo não.
   modal.addEventListener("click", function (e) { if (e.target === modal) fechar(); });
-  modal.addEventListener("close", function () { if (ultimoFoco && ultimoFoco.focus) ultimoFoco.focus(); });
+  modal.addEventListener("close", devolverFoco);
   function escapar(t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
 })();

@@ -148,12 +148,12 @@
             </div>
             <div class="ofc-percurso__linha">
               <div class="bate-volta__rotulo ofc-percurso__rotulo">Quem pede</div>
-              {# Nome, contato, lotação e órgão numa linha só. #}
+              {# Nome, contato, lotação e órgão numa linha só, cada um com o rótulo à vista: o placeholder some quando há valor. #}
               <div class="ofc-percurso__par ofc-percurso__par--4">
-                {% include "components/input.html" with name="solicitante_nome" label="Solicitante" rotulo_oculto=True obrigatorio=True placeholder="Nome de quem solicita" valor=valores.solicitante_nome erros=erros.solicitante_nome desabilitado=dados_desabilitado %}
-                {% include "components/input.html" with name="contato" label="Contato" rotulo_oculto=True tipo="tel" mascara="telefone" placeholder="(00) 00000-0000" valor=valores.contato erros=erros.contato desabilitado=dados_desabilitado %}
-                {% include "components/input.html" with name="solicitante_cargo_unidade" label="Cargo / unidade" rotulo_oculto=True obrigatorio=True placeholder="Cargo e unidade" valor=valores.solicitante_cargo_unidade erros=erros.solicitante_cargo_unidade desabilitado=dados_desabilitado %}
-                {% include "components/select.html" with name="orgao_responsavel" label="Órgão responsável" rotulo_oculto=True opcoes=orgaos obrigatorio=True selecionado=valores.orgao_responsavel erros=erros.orgao_responsavel desabilitado=dados_desabilitado placeholder="Órgão responsável" %}
+                {% include "components/input.html" with name="solicitante_nome" label="Solicitante" obrigatorio=True placeholder="Nome de quem solicita" valor=valores.solicitante_nome erros=erros.solicitante_nome desabilitado=dados_desabilitado %}
+                {% include "components/input.html" with name="contato" label="Contato" tipo="tel" mascara="telefone" placeholder="(00) 00000-0000" valor=valores.contato erros=erros.contato desabilitado=dados_desabilitado %}
+                {% include "components/input.html" with name="solicitante_cargo_unidade" label="Cargo / unidade" obrigatorio=True placeholder="Cargo e unidade" valor=valores.solicitante_cargo_unidade erros=erros.solicitante_cargo_unidade desabilitado=dados_desabilitado %}
+                {% include "components/select.html" with name="orgao_responsavel" label="Órgão responsável" opcoes=orgaos obrigatorio=True selecionado=valores.orgao_responsavel erros=erros.orgao_responsavel desabilitado=dados_desabilitado placeholder="Órgão responsável" %}
               </div>
             </div>
             {% if not dados_desabilitado %}
@@ -246,6 +246,8 @@
                   </tbody>
                 </table>
               </div>
+            {% else %}
+              <p class="v32-suave">Nenhum arquivo anexado{% if pode_gerenciar_anexos %}. Use "Anexar arquivo" para incluir ofício, e-mail ou foto do local{% endif %}.</p>
             {% endif %}
           {% else %}
             {% include "components/upload_anexos.html" with id="id_anexos_cadastro" name="anexos" multiple=True mensagem_vazio="Nenhum arquivo selecionado. Eles serão salvos junto com a solicitação." aceitar=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.odt,.ods,.eml,.msg,.txt" ajuda_tipos="Ofício, memorando, e-mail do pedido, foto do local. PDF, DOC, XLS, ODT, e-mail (EML ou MSG), TXT ou imagem, até 10 MB por arquivo." only %}

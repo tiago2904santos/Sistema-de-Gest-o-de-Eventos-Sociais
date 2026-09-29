@@ -29,6 +29,7 @@
         {% else %}<span class="dd__i of-item of-item--inativo" aria-disabled="true">{% include "components/icon.html" with nome="upload" %}<span><b>Anexar assinado</b><small>Gere o PDF da OS primeiro</small></span></span>{% endif %}
       {% endif %}
       <a class="dd__i of-item" href="{{ l.url_editar }}?next={{ url_atual|urlencode }}">{% include "components/icon.html" with nome="pencil" %}<span><b>Editar</b><small>Ofícios, necessidade, período, destinos e equipe</small></span></a>
+      <div class="dd__s"></div>
       {% if o.cancelado %}
         <form method="post" action="{{ l.url_reativar }}" data-confirmar="Reativar a OS?">{% csrf_token %}<input type="hidden" name="next" value="{{ url_atual }}">
           <button type="submit" class="dd__i of-item">{% include "components/icon.html" with nome="undo" %}<span><b>Reativar</b><small>Voltar a emitir documentos desta OS</small></span></button>

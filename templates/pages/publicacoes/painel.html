@@ -36,7 +36,7 @@
         {% for barra in grafico %}
           <div class="gr__c{% if forloop.last %} gr__c--hoje{% endif %}" title="{{ barra.titulo }}">
             <span class="gr__t">{{ barra.valor }} pauta{{ barra.valor|pluralize }}</span>
-            <span class="gr__b" style="height:{{ barra.altura }}%"></span>
+            <span class="gr__b" style="height:{{ barra.altura }}%"><span class="gr__v" aria-hidden="true">{{ barra.valor }}</span></span>
             <span class="gr__m">{{ barra.rotulo|lower }}</span>
           </div>
         {% endfor %}

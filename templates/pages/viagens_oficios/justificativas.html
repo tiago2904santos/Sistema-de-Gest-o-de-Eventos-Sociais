@@ -52,7 +52,7 @@
           </thead>
           <tbody>
             {% for l in linhas %}
-              <tr>
+              <tr data-linha-url="{{ l.url_editar }}">
                 <td class="tabela__col-icone">
                   {% url 'documentos:editor_pagina' 'justificativa' l.oficio.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar a justificativa" %}
                   <span class="sr-only">Justificativa</span>

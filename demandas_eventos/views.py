@@ -37,7 +37,7 @@ from .permissions import pode_editar, queryset_visivel
 from .planilha import chave
 from .presenters import ICONES_EVENTO, ICONES_STATUS, linha_da_lista, linha_do_cadastro
 
-ITENS_POR_PAGINA = 20
+ITENS_POR_PAGINA = 25
 
 MESES = [
     "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
@@ -177,6 +177,7 @@ def lista_demandas(request):
                 visiveis.count(),
                 ICONES_EVENTO,
                 parametro="evento",
+                rotulo_todas="Todos",
             )[1:],
             "evento_ativo": evento or "todas",
             "querystring": parametros.urlencode(),

@@ -56,7 +56,7 @@ from .permissions import (
     pode_editar_diarias,
 )
 
-ITENS_POR_PAGINA = 20
+ITENS_POR_PAGINA = 25
 
 CADASTROS = {
     "servidores": {
@@ -867,7 +867,7 @@ def _lista_viaturas(request, modal=None):
     elif unidade:
         queryset = queryset.filter(unidade=unidade)
         parametros["unidade"] = unidade.pk
-    paginator = Paginator(queryset, 15)
+    paginator = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginator.get_page(request.GET.get("page") or request.GET.get("pagina"))
     config = _config("viaturas")
     pode_editar = pode_editar_cadastros(request.user)
@@ -914,7 +914,7 @@ def _lista_catalogo(request, slug, modal=None):
         ids = [linha[0] for linha in queryset.values_list(*campos)
                if any(procurado in _texto_busca(valor) for valor in linha[1:])]
         queryset = queryset.filter(pk__in=ids)
-    paginator = Paginator(queryset, 15)
+    paginator = Paginator(queryset, ITENS_POR_PAGINA)
     pagina = paginator.get_page(request.GET.get("page") or request.GET.get("pagina"))
     parametros = {"q": termo} if termo else {}
     if retorno:

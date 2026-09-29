@@ -55,7 +55,7 @@
         </thead>
         <tbody>
           {% for linha in linhas %}
-            <tr>
+            <tr data-linha-url="{{ linha.editar_url }}">
               {# O ícone distingue avulso de roteiro preso a uma solicitação; sem o rótulo oculto a coluna anunciaria "Tipo" e não diria nada. #}
               <td class="tabela__col-icone">
                 <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=linha.icone %}</span>

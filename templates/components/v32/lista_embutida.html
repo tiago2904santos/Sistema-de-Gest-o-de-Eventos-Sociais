@@ -22,7 +22,8 @@
       </thead>
       <tbody>
         {% for l in linhas %}
-          <tr{% if l.cancelada %} class="tm-linha--cancelada"{% endif %}>
+          {% firstof l.url_abrir l.url_editar l.url_detalhe as destino %}
+          <tr{% if l.cancelada %} class="tm-linha--cancelada"{% endif %}{% if destino and not sem_clique_linha %} data-linha-url="{{ destino }}"{% endif %}>
             <td class="tabela__col-icone">
               <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome=icone %}</span>
               <span class="sr-only">{{ rotulo }}</span>

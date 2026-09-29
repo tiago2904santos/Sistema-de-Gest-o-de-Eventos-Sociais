@@ -194,12 +194,18 @@ def limpar(*, dias=DIAS_GUARDA_ARTEFATOS, apagar=False) -> dict:
 
 
 def descrever(resumo: dict) -> str:
+    # Só o que de fato saiu: "0 PDF/DOCX; 0 anexo(s); 0 planilha(s)" no aviso
+    # era ruído em volta do único número que importava.
     partes = [
-        f"{len(resumo['artefatos'])} PDF/DOCX antigo(s) de documentos",
-        f"{len(resumo['anexos_removidos'])} anexo(s) de prestação removido(s) há mais de 30 dias",
-        f"{len(resumo['orfaos'])} arquivo(s) órfão(s)",
-        f"{len(resumo['importacoes_coffee'])} planilha(s) temporária(s) do Coffee Break",
-    ]
+        texto
+        for quantidade, texto in (
+            (len(resumo["artefatos"]), f"{len(resumo['artefatos'])} PDF/DOCX antigo(s) de documentos"),
+            (len(resumo["anexos_removidos"]), f"{len(resumo['anexos_removidos'])} anexo(s) de prestação removido(s) há mais de 30 dias"),
+            (len(resumo["orfaos"]), f"{len(resumo['orfaos'])} arquivo(s) órfão(s)"),
+            (len(resumo["importacoes_coffee"]), f"{len(resumo['importacoes_coffee'])} planilha(s) temporária(s) do Coffee Break"),
+        )
+        if quantidade
+    ] or ["nenhum arquivo"]
     if resumo.get("sessoes"):
         partes.append("sessões vencidas")
     return "; ".join(partes)

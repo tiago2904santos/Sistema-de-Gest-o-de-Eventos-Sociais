@@ -14,7 +14,7 @@ def erro_403(request, exception=None):
     """Resposta de acesso negado com orientação e retorno seguro."""
     return render(request, "403.html", status=403)
 
-ITENS_POR_PAGINA = 20
+ITENS_POR_PAGINA = 25
 
 
 def _metricas_eventos(usuario, hoje):
@@ -31,12 +31,14 @@ def _metricas_eventos(usuario, hoje):
             StatusSolicitacao.NAO_ATENDIDA,
         ]
     )
+    lista = reverse("solicitacoes:lista")
     return [
         {
             "rotulo": "No mês",
             "valor": visiveis.filter(
                 data_solicitacao__year=hoje.year, data_solicitacao__month=hoje.month
             ).count(),
+            "url": lista,
         },
         {
             "rotulo": "Aguardando despacho",
@@ -44,8 +46,9 @@ def _metricas_eventos(usuario, hoje):
                 status=StatusSolicitacao.AGUARDANDO_DESPACHO
             ).count(),
             "destaque": True,
+            "url": f"{lista}?fila=despacho",
         },
-        {"rotulo": "Eventos em 30 dias", "valor": proximos.count()},
+        {"rotulo": "Eventos em 30 dias", "valor": proximos.count(), "url": reverse("agenda:painel")},
     ]
 
 
@@ -72,10 +75,16 @@ def _metricas_coffee_break(usuario, hoje):
         )
         if s.situacao_financeira != SituacaoFinanceira.CONCLUIDA
     )
+    lotes_url = reverse("coffee_break:lotes")
     return [
-        {"rotulo": "Saldo dos lotes", "valor": restante},
-        {"rotulo": "Pendências financeiras", "valor": pendencias, "destaque": True},
-        {"rotulo": "Lotes em alerta", "valor": em_alerta},
+        {"rotulo": "Saldo dos lotes", "valor": restante, "url": lotes_url},
+        {
+            "rotulo": "Pendências financeiras",
+            "valor": pendencias,
+            "destaque": True,
+            "url": reverse("coffee_break:solicitacoes") + "?pendentes=1",
+        },
+        {"rotulo": "Lotes em alerta", "valor": em_alerta, "url": lotes_url},
     ]
 
 
@@ -84,11 +93,13 @@ def _metricas_demandas(usuario, hoje):
     from demandas_eventos.permissions import queryset_visivel
 
     visiveis = queryset_visivel(usuario, DemandaEvento.objects.all())
+    lista = reverse("demandas_eventos:lista")
     return [
         {
             "rotulo": "Pendentes",
             "valor": visiveis.filter(status=StatusDemanda.PENDENTE).count(),
             "destaque": True,
+            "url": f"{lista}?status={StatusDemanda.PENDENTE}",
         },
         {
             "rotulo": "Em andamento",
@@ -98,12 +109,14 @@ def _metricas_demandas(usuario, hoje):
                     StatusDemanda.AGUARDANDO_RETORNO,
                 ]
             ).count(),
+            "url": lista,
         },
         {
             "rotulo": "Agendadas",
             "valor": visiveis.filter(
                 status=StatusDemanda.EVENTO_AGENDADO
             ).count(),
+            "url": f"{lista}?status={StatusDemanda.EVENTO_AGENDADO}",
         },
     ]
 
@@ -112,13 +125,15 @@ def _metricas_publicacoes(usuario, hoje):
     from publicacoes import services as publicacoes_services
 
     mes = publicacoes_services.resumo_periodo(publicacoes_services.inicio_do_mes(hoje))
+    lista = reverse("publicacoes:lista")
     return [
-        {"rotulo": "Pautas no mês", "valor": mes["total"]},
-        {"rotulo": "Publicadas no mês", "valor": mes["publicadas"]},
+        {"rotulo": "Pautas no mês", "valor": mes["total"], "url": lista},
+        {"rotulo": "Publicadas no mês", "valor": mes["publicadas"], "url": f"{lista}?fila=publicadas"},
         {
             "rotulo": "Em aberto",
             "valor": publicacoes_services.em_aberto().count(),
             "destaque": True,
+            "url": lista,
         },
     ]
 
@@ -127,16 +142,87 @@ def _metricas_atendimento_imprensa(usuario, hoje):
     from atendimento_imprensa import services as imprensa_services
 
     mes = imprensa_services.resumo_periodo(imprensa_services.inicio_do_mes(hoje))
+    lista = reverse("atendimento_imprensa:lista")
     return [
-        {"rotulo": "Pedidos no mês", "valor": mes["total"]},
+        {"rotulo": "Pedidos no mês", "valor": mes["total"], "url": lista},
         {
             "rotulo": "Em aberto",
             "valor": imprensa_services.em_aberto().count(),
             "destaque": True,
+            "url": f"{lista}?fila=abertos",
         },
         {
             "rotulo": "Deadline vencido",
             "valor": imprensa_services.deadline_vencido(hoje).count(),
+            "url": reverse("atendimento_imprensa:painel"),
+        },
+    ]
+
+
+def _metricas_agenda(usuario, hoje):
+    """Compromissos de verdade (viagens, eventos, coffee break, palestras) —
+    sem prazos nem feriados — e os choques de agenda do mês que vem."""
+    import datetime as dt
+
+    from agenda.fontes import eventos_de
+
+    def dia(texto):
+        return dt.date.fromisoformat(texto[:10])
+
+    fim_semana = hoje + timedelta(days=6)
+    eventos = eventos_de(
+        usuario, hoje, hoje + timedelta(days=29), slugs=("viagem", "solicitacao", "coffee", "demanda")
+    )
+    hoje_n = semana_n = 0
+    conflitos = set()
+    for ev in eventos:
+        inicio = dia(ev["start"])
+        fim = dia(ev.get("end") or ev["start"])
+        # Dia inteiro: o fim vem exclusivo, no padrão do calendário.
+        if ev.get("allDay") and ev.get("end") and fim > inicio:
+            fim -= timedelta(days=1)
+        if inicio <= hoje <= fim:
+            hoje_n += 1
+        if inicio <= fim_semana and fim >= hoje:
+            semana_n += 1
+        if "ag-conflito" in (ev.get("classNames") or []):
+            conflitos.add(ev.get("id"))
+    painel = reverse("agenda:painel")
+    data = hoje.isoformat()
+    return [
+        {"rotulo": "Hoje", "valor": hoje_n, "url": f"{painel}?view=timeGridDay&data={data}"},
+        {"rotulo": "Próximos 7 dias", "valor": semana_n, "url": f"{painel}?view=list30&data={data}"},
+        {
+            "rotulo": "Conflitos em 30 dias",
+            "valor": len(conflitos),
+            "destaque": True,
+            "url": f"{painel}?view=list30&data={data}",
+        },
+    ]
+
+
+def _metricas_viagens(usuario, hoje):
+    from viagens_viagem import abas
+    from viagens_viagem.models import Viagem
+
+    contagem = abas.contar_por_aba(abas.anotar_situacao(Viagem.objects.all()))
+    lista = reverse("viagens_viagem:lista")
+    return [
+        {
+            "rotulo": "Vão acontecer",
+            "valor": contagem[abas.ABA_FUTURAS],
+            "url": f"{lista}?situacao={abas.ABA_FUTURAS}",
+        },
+        {
+            "rotulo": "Em andamento ou sem prestação",
+            "valor": contagem[abas.ABA_ATUAIS],
+            "destaque": True,
+            "url": f"{lista}?situacao={abas.ABA_ATUAIS}",
+        },
+        {
+            "rotulo": "Contas prestadas",
+            "valor": contagem[abas.ABA_FINALIZADOS],
+            "url": f"{lista}?situacao={abas.ABA_FINALIZADOS}",
         },
     ]
 
@@ -148,6 +234,8 @@ METRICAS_POR_MODULO = {
     "demandas_eventos": _metricas_demandas,
     "publicacoes": _metricas_publicacoes,
     "atendimento_imprensa": _metricas_atendimento_imprensa,
+    "agenda": _metricas_agenda,
+    "viagens": _metricas_viagens,
 }
 
 
@@ -184,6 +272,8 @@ def home(request):
         request,
         "pages/core/hub.html",
         {
+            "ano_atual": hoje.year,
+            "ano_anterior": hoje.year - 1,
             "cartoes": cartoes,
             "mostrar_usuarios": pode_gerenciar_usuarios(request.user),
             # A faixa "solte o e-mail aqui": só para quem tem módulo que lê e-mail.

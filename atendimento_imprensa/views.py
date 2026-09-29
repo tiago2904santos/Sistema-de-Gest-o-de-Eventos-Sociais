@@ -241,7 +241,7 @@ def lista(request):
             "querystring": querystring,
             "q": valores.get("q", ""),
             "situacoes": trilha_de_situacoes(
-                request, filas, sum(contagens.values()), ICONES_FILA
+                request, filas, sum(contagens.values()), ICONES_FILA, rotulo_todas="Todos"
             ),
             # Chip aceso: sem fila escolhida, "Todas".
             "situacao_ativa": fila_ativa or "todas",

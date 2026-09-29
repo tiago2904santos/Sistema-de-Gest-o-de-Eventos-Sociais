@@ -9,12 +9,13 @@
 {% endcomment %}
 <section class="pc-oficio" aria-labelledby="pc-{{ g.prestacao_pk }}-titulo"{% if pode_editar %} data-importar-url="{{ g.importar_url }}" data-importar-titulo="Ofício {{ g.oficio.numero }}"{% endif %}>
   <header class="pc-oficio__linha">
-    <h2 class="pc-oficio__numero" id="pc-{{ g.prestacao_pk }}-titulo">Ofício {{ g.oficio.numero }}</h2>
+    <h2 class="pc-oficio__numero" id="pc-{{ g.prestacao_pk }}-titulo">Ofício {% if g.oficio.numero and g.oficio.numero != "—" %}{{ g.oficio.numero }}{% else %}<span class="pc-oficio__qtd">sem número</span>{% endif %}</h2>
     <ul class="pc-oficio__dados">
-      <li><span class="pc-oficio__rotulo">Protocolo</span>{{ g.oficio.protocolo|default:"—" }}</li>
-      <li><span class="pc-oficio__rotulo">Destino</span>{{ g.oficio.destino|default:"—" }}</li>
-      <li><span class="pc-oficio__rotulo">Período</span>{{ g.oficio.periodo|default:"—" }}</li>
-      <li><span class="pc-oficio__rotulo">Por servidor</span>{% if g.valor_por_servidor %}{{ g.valor_por_servidor }}{% if g.quantidade_diarias %} <span class="pc-oficio__qtd">{{ g.quantidade_diarias }}</span>{% endif %}{% else %}—{% endif %}</li>
+      {# Par sem valor não aparece: uma fileira de "PROTOCOLO — DESTINO — PERÍODO —" só fazia ruído. #}
+      {% if g.oficio.protocolo and g.oficio.protocolo != "—" %}<li><span class="pc-oficio__rotulo">Protocolo</span>{{ g.oficio.protocolo }}</li>{% endif %}
+      {% if g.oficio.destino and g.oficio.destino != "—" %}<li><span class="pc-oficio__rotulo">Destino</span>{{ g.oficio.destino }}</li>{% endif %}
+      {% if g.oficio.periodo and g.oficio.periodo != "—" %}<li><span class="pc-oficio__rotulo">Período</span>{{ g.oficio.periodo }}</li>{% endif %}
+      {% if g.valor_por_servidor %}<li><span class="pc-oficio__rotulo">Por servidor</span>{{ g.valor_por_servidor }}{% if g.quantidade_diarias %} <span class="pc-oficio__qtd">{{ g.quantidade_diarias }}</span>{% endif %}</li>{% endif %}
       {# m105: em que setor o processo está no eProtocolo (consulta diária ou "Atualizar"). Em modo simulado o dado é fictício, e diz. #}
       {% if g.protocolo.tem_protocolo %}
         <li class="pc-oficio__processo{% if g.protocolo.no_setor_do_despacho %} pc-oficio__processo--despacho{% endif %}" data-protocolo-andamento{% if g.protocolo.consultado_em %} title="Consultado em {{ g.protocolo.consultado_em }}{% if g.protocolo.situacao %} · {{ g.protocolo.situacao }}{% endif %}"{% endif %}>

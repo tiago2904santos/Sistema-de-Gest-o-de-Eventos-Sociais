@@ -50,7 +50,7 @@
         </thead>
         <tbody>
           {% for l in linhas %}{% with p=l.plano %}
-            <tr{% if p.cancelado %} class="tm-linha--cancelada"{% endif %}>
+            <tr data-linha-url="{{ l.url_editar }}?next={{ url_atual|urlencode }}"{% if p.cancelado %} class="tm-linha--cancelada"{% endif %}>
               <td class="tabela__col-icone">
                 {% url 'documentos:editor_pagina' 'plano_trabalho' p.pk as url_editor %}{% include "components/icone_documento.html" with nome="clipboard" url=url_editor rotulo="Editar o plano de trabalho" %}
                 <span class="sr-only">Plano de trabalho</span>

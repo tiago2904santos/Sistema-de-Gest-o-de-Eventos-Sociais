@@ -1,0 +1,17 @@
+{% extends "layouts/app_shell_v32.html" %}
+
+{% block title %}Página não encontrada — Sistema de Gestão de Eventos Sociais{% endblock %}
+
+{% block conteudo %}
+  <section class="semres v32-erro" aria-labelledby="erro-titulo">
+    <span class="erro-pagina__codigo" aria-hidden="true">404</span>
+    <div>
+      <h1 id="erro-titulo">Não encontramos esta página</h1>
+      <p>O endereço pode ter sido digitado errado, ou o registro foi excluído.</p>
+      <div class="cad-frm__acoes">
+        <a class="btn-primaria" href="{% url 'core:home' %}">Voltar ao início</a>
+      </div>
+      <p class="form-ajuda">Se você chegou aqui por um link do próprio sistema, avise o administrador.</p>
+    </div>
+  </section>
+{% endblock %}

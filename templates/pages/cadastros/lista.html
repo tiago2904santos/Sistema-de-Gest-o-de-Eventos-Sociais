@@ -18,7 +18,6 @@
 
     <section class="pa-card pa-card--lista cad-lista">
       <form method="get" class="cad-barra" data-auto-enviar>
-        {% if situacao %}<input type="hidden" name="situacao" value="{{ situacao }}">{% endif %}
         <div class="busca">
           {% include "components/icon.html" with nome="search" %}
           <label class="sr-only" for="id_q">Buscar {{ singular }} pelo nome</label>
@@ -32,25 +31,23 @@
             <tr>
               <th class="c-nome">Nome</th>
               {% if eh_municipio %}<th class="c-mun">Estado</th><th class="c-mun">Região</th>{% endif %}
-              <th class="c-sit">Situação</th>
               <th class="c-data">Atualizado em</th>
               <th class="c-cad-acoes">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for objeto in pagina %}
-              <tr>
+              <tr data-linha-url="{% url 'cadastros:editar' slug objeto.pk %}">
                 <td class="c-nome">{{ objeto.nome }}</td>
                 {% if eh_municipio %}
                   <td class="c-mun">{{ objeto.estado }}</td>
                   <td class="c-mun">{{ objeto.regiao }}</td>
                 {% endif %}
-                <td class="c-sit">{% if objeto.ativo %}<span class="st st--ativo">Ativo</span>{% else %}<span class="st st--inativo">Inativo</span>{% endif %}</td>
                 <td class="c-data">{{ objeto.atualizado_em|date:"d/m/Y H:i" }}</td>
                 <td class="c-cad-acoes">{% include "pages/cadastros/_acoes_linha.html" %}                </td>
               </tr>
             {% empty %}
-              <tr><td colspan="{% if eh_municipio %}6{% else %}4{% endif %}" class="dt__vazio">Nenhum registro encontrado.</td></tr>
+              <tr><td colspan="{% if eh_municipio %}5{% else %}3{% endif %}" class="dt__vazio">Nenhum registro encontrado.</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -92,7 +89,6 @@
             <div class="m-item">
               <div class="m-item__topo">
                 <span class="m-item__tipo">{{ objeto.nome }}</span>
-                {% if objeto.ativo %}<span class="st st--ativo">Ativo</span>{% else %}<span class="st st--inativo">Inativo</span>{% endif %}
               </div>
               <div class="m-item__meta">{% if eh_municipio %}{{ objeto.estado }} · {{ objeto.regiao }} · {% endif %}Atualizado em {{ objeto.atualizado_em|date:"d/m/Y H:i" }}</div>
               <div class="m-item__rodape">{% include "pages/cadastros/_acoes_linha.html" %}</div>

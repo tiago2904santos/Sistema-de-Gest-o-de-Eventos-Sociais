@@ -46,7 +46,7 @@ from . import (
     sugestoes,
 )
 
-ITENS_POR_PAGINA = 15
+ITENS_POR_PAGINA = 25
 
 logger = logging.getLogger(__name__)
 

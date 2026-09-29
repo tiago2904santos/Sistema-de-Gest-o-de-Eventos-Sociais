@@ -36,6 +36,41 @@
     if (versao && detalhe.versao) versao.value = detalhe.versao;
   });
 
+  /* Solicitação já salva: a folha vem do editor de documentos (com o que foi
+     editado nela) e só muda ao salvar. Quando o formulário muda, uma linha
+     sobre a folha diz isso — antes ela e a lista "O PDF ainda não pode ser
+     emitido" continuavam iguais e pareciam ignorar o que foi digitado. */
+  var docs = document.querySelector(".cb-docs-gerados");
+  if (form && docs && !document.querySelector("[data-cb-os-nova]")) {
+    var retrato = function () {
+      var partes = [];
+      new FormData(form).forEach(function (valor, nome) {
+        if (nome !== "csrfmiddlewaretoken" && nome !== "versao" && typeof valor === "string") partes.push(nome + "=" + valor);
+      });
+      return partes.join("&");
+    };
+    var inicial = null;
+    window.addEventListener("load", function () { setTimeout(function () { inicial = retrato(); }, 400); });
+    var nota = null;
+    var conferir = function () {
+      if (inicial === null) return;
+      var mudou = retrato() !== inicial;
+      if (mudou && !nota) {
+        nota = document.createElement("p");
+        nota.className = "cb-folha-desatualizada";
+        nota.setAttribute("role", "status");
+        nota.textContent = "A folha mostra a versão salva. Salve para ver nela o que você alterou.";
+        docs.insertBefore(nota, docs.firstChild);
+      }
+      if (nota) nota.hidden = !mudou;
+    };
+    form.addEventListener("input", conferir);
+    form.addEventListener("change", conferir);
+    document.querySelectorAll('[form="form-coffee-break"]').forEach(function (campo) {
+      campo.addEventListener("change", conferir);
+    });
+  }
+
   /* Nova solicitação: a folha da OS acompanha o formulário. A cada mudança
      (com uma pequena espera), o quadro recarrega com os valores digitados —
      nada é gravado; o palco do editor repagina quando o quadro carrega. */

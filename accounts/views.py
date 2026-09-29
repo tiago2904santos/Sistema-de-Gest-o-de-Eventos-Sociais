@@ -39,7 +39,7 @@ ICONES_PERFIL = {
 
 User = get_user_model()
 
-ITENS_POR_PAGINA = 20
+ITENS_POR_PAGINA = 25
 
 
 def _exigir_gestao_de_usuarios(request):
@@ -211,6 +211,7 @@ def lista_usuarios(request):
                 User.objects.count(),
                 ICONES_PERFIL,
                 parametro="perfil",
+                rotulo_todas="Todos",
             ),
             # Chip aceso: sem perfil escolhido, "Todos".
             "situacao_ativa": perfil or "todas",

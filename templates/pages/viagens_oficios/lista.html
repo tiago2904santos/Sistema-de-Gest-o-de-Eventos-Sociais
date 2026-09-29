@@ -93,7 +93,7 @@
           </thead>
           <tbody>
             {% for l in linhas %}{% with o=l.oficio d=l.documentos %}
-              <tr{% if o.cancelado %} class="tm-linha--cancelada"{% elif pode_editar %} data-importar-url="{% url 'viagens_prestacoes:importacao_enviar_oficio' o.pk %}" data-importar-titulo="Ofício {{ o.numero_formatado }}"{% endif %}>
+              <tr data-linha-url="{{ l.url_editar }}?next={{ url_atual|urlencode }}"{% if o.cancelado %} class="tm-linha--cancelada"{% elif pode_editar %} data-importar-url="{% url 'viagens_prestacoes:importacao_enviar_oficio' o.pk %}" data-importar-titulo="Ofício {{ o.numero_formatado }}"{% endif %}>
                 <td class="tabela__col-icone">
                   {% url 'documentos:editor_pagina' 'oficio' o.pk as url_editor %}{% include "components/icone_documento.html" with nome="document" url=url_editor rotulo="Editar o ofício" %}
                   <span class="sr-only">Ofício</span>

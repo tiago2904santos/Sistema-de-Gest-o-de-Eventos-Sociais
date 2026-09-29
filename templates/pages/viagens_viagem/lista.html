@@ -54,7 +54,7 @@
           </thead>
           <tbody>
             {% for l in linhas %}{% with v=l.viagem %}
-              <tr{% if v.cancelado %} class="tm-linha--cancelada"{% endif %}>
+              <tr data-linha-url="{{ l.url_editar }}"{% if v.cancelado %} class="tm-linha--cancelada"{% endif %}>
                 <td class="tabela__col-icone">
                   <span class="tabela__icone-doc" aria-hidden="true">{% include "components/icon.html" with nome="volante" %}</span>
                   <span class="sr-only">Viagem</span>

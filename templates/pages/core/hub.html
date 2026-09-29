@@ -20,15 +20,23 @@
         {% if cartao.metricas %}
           <dl class="portal-card__metricas">
             {% for metrica in cartao.metricas %}
-              <div class="portal-card__metrica{% if metrica.destaque and metrica.valor %} portal-card__metrica--destaque{% endif %}">
-                <dd>{{ metrica.valor }}</dd>
+              <div class="portal-card__metrica{% if metrica.destaque and metrica.valor %} portal-card__metrica--destaque{% endif %}{% if metrica.url %} portal-card__metrica--link{% endif %}">
+                {# O número leva à lista já filtrada; o link cobre o bloco inteiro (número e rótulo). #}
+                <dd>{% if metrica.url %}<a href="{{ metrica.url }}" aria-label="{{ metrica.valor }} — {{ metrica.rotulo }}: abrir em {{ cartao.nome }}">{{ metrica.valor }}</a>{% else %}{{ metrica.valor }}{% endif %}</dd>
                 <dt>{{ metrica.rotulo }}</dt>
               </div>
             {% endfor %}
           </dl>
+        {% elif cartao.slug == "relatorios" %}
+          {# Sem indicador próprio: os atalhos de sempre, no lugar do vão. #}
+          <ul class="portal-card__atalhos">
+            <li><a href="{{ cartao.url }}?ano={{ ano_atual }}">{% include "components/icon.html" with nome="calendar" %}Relatório de {{ ano_atual }}</a></li>
+            <li><a href="{{ cartao.url }}?ano={{ ano_anterior }}">{% include "components/icon.html" with nome="calendar" %}Relatório de {{ ano_anterior }}</a></li>
+            <li><a href="{% url 'relatorios:exportar' %}?ano={{ ano_atual }}">{% include "components/icon.html" with nome="download" %}Planilha de {{ ano_atual }}</a></li>
+          </ul>
         {% endif %}
         <div class="portal-card__acoes">
-          <a href="{{ cartao.url }}" class="btn-primaria ">
+          <a href="{{ cartao.url }}" class="btn-primaria " aria-label="Entrar no módulo {{ cartao.nome }}">
             Entrar no módulo
             {% include "components/icon.html" with nome="arrow-right" %}
           </a>

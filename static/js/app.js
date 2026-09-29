@@ -1997,10 +1997,19 @@
   document.querySelectorAll("[data-linha-url]").forEach(function (linha) {
     var destino = linha.getAttribute("data-linha-url");
 
+    linha.classList.add("linha-clicavel");
     linha.addEventListener("click", function (evento) {
-      if (evento.target.closest("a, button, input, label")) return;
+      if (evento.target.closest("a, button, input, label, select, textarea, [data-menu], .dd")) return;
       if (window.getSelection && String(window.getSelection())) return;
+      // Cadastro que edita em modal: a linha aciona o mesmo item do menu.
+      var modal = linha.querySelector('a[data-cadastro-modal][href="' + destino + '"]');
+      if (modal) { modal.click(); return; }
+      if (evento.ctrlKey || evento.metaKey || evento.button === 1) { window.open(destino, "_blank"); return; }
       window.location.href = destino;
+    });
+    linha.addEventListener("auxclick", function (evento) {
+      if (evento.button !== 1 || evento.target.closest("a, button")) return;
+      window.open(destino, "_blank");
     });
   });
 
@@ -2468,3 +2477,62 @@
 
 // A dica de rolagem lateral foi retirada em 14/09/2026: tabela que não cabe
 // se conserta na largura, não com um aviso pedindo para arrastar.
+
+/**
+ * Aviso antes de sair com alterações não salvas. Vale para os formulários de
+ * edição que não se salvam sozinhos (Coffee Break, Eventos Sociais, Palestras,
+ * cadastros em página): o autosave de Viagens e o editor de roteiro já cuidam
+ * dos seus. Compara o retrato do formulário ao abrir com o de agora — assim
+ * contam também os campos preenchidos pelo calendário, pelas listas e pela
+ * leitura do e-mail, que não geram eventos de teclado.
+ */
+(function () {
+  "use strict";
+
+  var AUTOSAVE = "[data-autosave],[data-autosave-url],[data-autosave-rascunho],[data-sem-aviso-saida]";
+  var enviando = false;
+
+  function editavel(form) {
+    if (form.closest("dialog, .dd, [data-menu]")) return false;
+    if (form.matches(AUTOSAVE) || form.querySelector(AUTOSAVE) || form.closest(AUTOSAVE)) return false;
+    return Array.prototype.some.call(form.elements, function (el) {
+      return !el.disabled && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) &&
+        !/^(hidden|submit|button|reset|file|search)$/i.test(el.type || "");
+    });
+  }
+
+  function retrato(form) {
+    var partes = [];
+    Array.prototype.forEach.call(form.elements, function (el) {
+      if (!el.name || el.name === "csrfmiddlewaretoken" || el.type === "file") return;
+      if (/^(checkbox|radio)$/i.test(el.type)) { partes.push(el.name + "=" + (el.checked ? el.value : "")); return; }
+      if (el.tagName === "SELECT" && el.multiple) {
+        partes.push(el.name + "=" + Array.prototype.filter.call(el.options, function (o) { return o.selected; }).map(function (o) { return o.value; }).join(","));
+        return;
+      }
+      partes.push(el.name + "=" + el.value);
+    });
+    return partes.join("&");
+  }
+
+  var vigiados = [];
+  function tirarRetratos() {
+    Array.prototype.forEach.call(document.querySelectorAll('main form[method="post" i], .app-v32 form[method="post" i]'), function (form) {
+      if (vigiados.some(function (v) { return v.form === form; }) || !editavel(form)) return;
+      vigiados.push({ form: form, inicial: retrato(form) });
+    });
+  }
+  // Depois que o app.js aprimorou calendários e listas (que ajustam valores ao montar).
+  window.addEventListener("load", function () { setTimeout(tirarRetratos, 400); });
+
+  document.addEventListener("submit", function () { enviando = true; }, true);
+  window.addEventListener("pageshow", function () { enviando = false; });
+
+  window.addEventListener("beforeunload", function (evento) {
+    if (enviando) return;
+    var sujo = vigiados.some(function (v) { return v.form.isConnected && retrato(v.form) !== v.inicial; });
+    if (!sujo) return;
+    evento.preventDefault();
+    evento.returnValue = "";
+  });
+})();

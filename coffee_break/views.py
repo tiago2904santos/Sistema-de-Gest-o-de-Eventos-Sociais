@@ -57,7 +57,7 @@ from .permissions import acesso_ao_modulo, gerenciamento_de_cadastros
 from .presenters import filas_de_situacao, linha_da_acao, linha_da_lista, linha_do_cadastro, linha_do_lote, selo_do_consumo
 from . import certidoes, documentos, documents, preenchimento, services
 
-ITENS_POR_PAGINA = 15
+ITENS_POR_PAGINA = 25
 
 
 # ---------------------------------------------------------------------------
@@ -430,6 +430,7 @@ def lista_lotes(request):
                 sum(contagens.values()),
                 {chave: "calendar" for chave in contagens},
                 parametro="exercicio",
+                rotulo_todas="Todos",
             ),
             # Chip aceso: sem exercício escolhido, "Todas".
             "situacao_ativa": valores.get("exercicio") or "todas",

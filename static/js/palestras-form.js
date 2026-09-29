@@ -36,18 +36,44 @@
       atualizarTemas();
     });
   }
-  if (busca) {
-    busca.addEventListener("input", function () {
-      var termo = semAcento(busca.value.trim());
-      var visiveis = 0;
-      cartoes.forEach(function (c) {
-        var mostra = !termo || c.getAttribute("data-filtro").indexOf(termo) !== -1 || c.querySelector("input").checked;
-        c.hidden = !mostra;
-        if (mostra) visiveis += 1;
-      });
-      if (vazio) vazio.hidden = visiveis > 0;
-    });
+  // Com dezenas de temas a grade ocupava três telas: sem busca, aparecem os
+  // marcados e os primeiros da lista, e um botão abre o resto. A busca
+  // sempre alcança todos.
+  var LIMITE = 12;
+  var todos = false;
+  var botaoTodos = null;
+  if (temas && cartoes.length > LIMITE + 3) {
+    botaoTodos = document.createElement("button");
+    botaoTodos.type = "button";
+    botaoTodos.className = "btn--secundaria btn--compacto pal-temas__todos";
+    botaoTodos.setAttribute("aria-controls", "id_temas");
+    var grade = temas.querySelector("#id_temas");
+    grade.parentNode.insertBefore(botaoTodos, grade.nextSibling);
+    botaoTodos.addEventListener("click", function () { todos = !todos; filtrarTemas(); });
   }
+
+  function filtrarTemas() {
+    var termo = busca ? semAcento(busca.value.trim()) : "";
+    var visiveis = 0;
+    var livres = 0;
+    cartoes.forEach(function (c) {
+      var marcado = c.querySelector("input").checked;
+      var mostra;
+      if (termo) mostra = c.getAttribute("data-filtro").indexOf(termo) !== -1 || marcado;
+      else if (marcado || todos || !botaoTodos) mostra = true;
+      else { livres += 1; mostra = livres <= LIMITE; }
+      c.hidden = !mostra;
+      if (mostra) visiveis += 1;
+    });
+    if (vazio) vazio.hidden = visiveis > 0;
+    if (botaoTodos) {
+      botaoTodos.hidden = Boolean(termo);
+      botaoTodos.setAttribute("aria-expanded", todos ? "true" : "false");
+      botaoTodos.textContent = todos ? "Mostrar menos" : "Mostrar todos os " + cartoes.length + " temas";
+    }
+  }
+  if (busca) busca.addEventListener("input", filtrarTemas);
+  filtrarTemas();
 
   // 2. Recomendação de palestrante -------------------------------------------
   // O "Tema de abordagem" do palestrante é texto livre ("Bullyng /

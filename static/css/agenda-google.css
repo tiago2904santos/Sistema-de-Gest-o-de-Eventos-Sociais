@@ -311,3 +311,16 @@
   .gca .fc .fc-list-event td:first-child { padding-left: 16px; }
   .gca .fc .fc-list-event-time { width: auto; }
 }
+
+/* Enquanto o feed carrega: pílula discreta no topo da grade (a grade vazia
+   parecia "nada no período"). */
+.gca-principal.is-carregando::after {
+  content: "Carregando a agenda…";
+  position: absolute; top: 44px; left: 50%; transform: translateX(-50%); z-index: 5;
+  padding: 6px 14px; border-radius: 999px;
+  background: var(--n-900, #333); color: #fff; font-size: 12.5px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.14);
+  animation: gca-carregando 1.2s ease-in-out infinite alternate;
+}
+@keyframes gca-carregando { from { opacity: .55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gca-principal.is-carregando::after { animation: none; } }

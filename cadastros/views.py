@@ -115,7 +115,7 @@ CADASTROS = {
     },
 }
 
-ITENS_POR_PAGINA = 20
+ITENS_POR_PAGINA = 25
 
 
 def _exigir_administrador(request, slug=None):
