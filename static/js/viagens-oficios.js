@@ -322,47 +322,59 @@
   if (raizEquipe) raizEquipe.addEventListener("ofc:mudou", atualizarSugestoes);
 
   // 5. Sugestões de viatura -------------------------------------------------
-  var sugestoes = form.querySelector("[data-ofc-sugestoes]");
-  var listaSugestoes = form.querySelector("[data-ofc-sugestoes-lista]");
+  // As sugeridas sobem para o topo da própria lista, cada uma com o chip do
+  // porquê: "Unidade ASCOM" (a da equipe ou a do motorista) ou "Motorista:
+  // FULANO" (ele pode conduzir essa viatura). As demais seguem na ordem.
+  var listaViaturas = form.querySelector('[data-lista-escolha="viatura"]');
+  var ordemViaturas = listaViaturas ? Array.prototype.slice.call(listaViaturas.querySelectorAll("[data-lista-item]")) : [];
+
+  function nomeDaLinha(linha) {
+    var nome = linha && linha.querySelector(".of-pessoa__nome");
+    if (!nome) return "";
+    var texto = "";
+    nome.childNodes.forEach(function (n) { if (n.nodeType === 3) texto += n.textContent; });
+    return (texto || nome.textContent).trim();
+  }
+
+  function chipDeSugestao(texto) {
+    var chip = document.createElement("span");
+    chip.className = "st st--atendido lista-escolha__chip";
+    chip.setAttribute("data-ofc-sugestao", "");
+    chip.textContent = texto;
+    return chip;
+  }
 
   function atualizarSugestoes() {
-    var linhasViatura = Array.prototype.slice.call(form.querySelectorAll('[data-lista-escolha="viatura"] [data-lista-item]'));
-    if (!sugestoes || !linhasViatura.length) return;
-    var unidades = new Set();
+    if (!listaViaturas || !ordemViaturas.length) return;
+    // Unidade → quem a trouxe (a equipe ou o motorista), para o rótulo do chip.
+    var unidades = {};
     if (equipe) equipe.linhas.forEach(function (l) {
-      if (equipe.escolhido(l) && l.getAttribute("data-unidade")) unidades.add(l.getAttribute("data-unidade"));
+      if (equipe.escolhido(l) && l.getAttribute("data-unidade")) unidades[l.getAttribute("data-unidade")] = true;
     });
     var marcado = form.querySelector('input[name="motorista"]:checked');
+    var nomeMotorista = "";
     if (marcado) {
       var lm = form.querySelector('[data-lista-escolha="motorista"] [data-lista-item="' + marcado.value + '"]');
-      if (lm && lm.getAttribute("data-unidade")) unidades.add(lm.getAttribute("data-unidade"));
+      if (lm && lm.getAttribute("data-unidade")) unidades[lm.getAttribute("data-unidade")] = true;
+      nomeMotorista = nomeDaLinha(lm);
     }
-    listaSugestoes.innerHTML = "";
-    linhasViatura.forEach(function (l) {
-      // Viatura que o motorista escolhido está autorizado a conduzir também é sugestão.
-      var conduz = marcado && (l.getAttribute("data-motoristas") || "").split(" ").indexOf(marcado.value) !== -1;
-      if (!conduz && !unidades.has(l.getAttribute("data-unidade"))) return;
-      var radio = l.querySelector('input[name="viatura"]');
-      var chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "ofc-sugestao";
-      chip.setAttribute("aria-pressed", radio.checked ? "true" : "false");
-      chip.textContent = l.querySelector(".of-pessoa__nome").textContent.trim();
-      if (l.getAttribute("data-sigla")) {
-        var sigla = document.createElement("span");
-        sigla.className = "ofc-sugestao__sigla";
-        sigla.textContent = l.getAttribute("data-sigla");
-        chip.appendChild(sigla);
+    var sugeridas = [], demais = [];
+    ordemViaturas.forEach(function (l) {
+      l.querySelectorAll("[data-ofc-sugestao]").forEach(function (c) { c.remove(); });
+      var chips = [];
+      if (unidades[l.getAttribute("data-unidade")]) {
+        chips.push("Unidade " + (l.getAttribute("data-sigla") || "da equipe"));
       }
-      chip.addEventListener("click", function () {
-        if (radio.checked) return;
-        radio.checked = true;
-        radio.dispatchEvent(new Event("change", { bubbles: true }));
-      });
-      listaSugestoes.appendChild(chip);
+      var conduz = marcado && (l.getAttribute("data-motoristas") || "").split(" ").indexOf(marcado.value) !== -1;
+      if (conduz) chips.push("Motorista: " + (nomeMotorista || "escolhido"));
+      var nome = l.querySelector(".of-pessoa__nome");
+      if (nome) chips.forEach(function (t) { nome.appendChild(chipDeSugestao(t)); });
+      (chips.length ? sugeridas : demais).push(l);
     });
-    sugestoes.hidden = !listaSugestoes.children.length;
+    sugeridas.concat(demais).forEach(function (l) { l.parentNode.appendChild(l); });
+    if (sugestoes) sugestoes.hidden = true;
   }
+  var sugestoes = form.querySelector("[data-ofc-sugestoes]");
   atualizarSugestoes();
 
   // 5a. Condutores autorizados da viatura -------------------------------------
