@@ -1,0 +1,34 @@
+{
+  "size": {
+    "$type": "dimension",
+    "control-height": {
+      "$value": "44px",
+      "$extensions": {
+        "cv": {
+          "css": "--ctrl-h"
+        }
+      }
+    },
+    "content-max": {
+      "$value": "1440px",
+      "$extensions": {
+        "cv": {
+          "css": "--larg"
+        }
+      }
+    },
+    "icon": {
+      "$value": "15px",
+      "$description": "Tamanho padrão de .ui-icon"
+    },
+    "touch-target-min": {
+      "$value": "24px",
+      "$description": "WCAG 2.5.8 (mínimo); 44px recomendado no celular",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    }
+  }
+}

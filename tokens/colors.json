@@ -1,0 +1,248 @@
+{
+  "color": {
+    "$type": "color",
+    "neutral": {
+      "950": {
+        "$value": "#262626"
+      },
+      "900": {
+        "$value": "#333333"
+      },
+      "800": {
+        "$value": "#3f3f3f"
+      },
+      "700": {
+        "$value": "#4d4d4d"
+      },
+      "600": {
+        "$value": "#5e5e5e"
+      },
+      "500": {
+        "$value": "#6e6e6e"
+      },
+      "450": {
+        "$value": "#777777"
+      },
+      "400": {
+        "$value": "#808080"
+      },
+      "300": {
+        "$value": "#a6a8aa"
+      },
+      "250": {
+        "$value": "#d1d3d4"
+      },
+      "200": {
+        "$value": "#e1e2e3"
+      },
+      "150": {
+        "$value": "#e9eaeb"
+      },
+      "100": {
+        "$value": "#eff0f0"
+      },
+      "75": {
+        "$value": "#f3f4f4"
+      },
+      "50": {
+        "$value": "#f7f8f8"
+      },
+      "25": {
+        "$value": "#fbfbfb"
+      }
+    },
+    "gold": {
+      "900": {
+        "$value": "#5c4a1c"
+      },
+      "800": {
+        "$value": "#6d5926"
+      },
+      "700": {
+        "$value": "#7d6626"
+      },
+      "600": {
+        "$value": "#bea45a"
+      },
+      "550": {
+        "$value": "#c9b06d"
+      },
+      "500": {
+        "$value": "#bea45a"
+      },
+      "400": {
+        "$value": "#c9b06d"
+      },
+      "300": {
+        "$value": "#ddd0ab"
+      },
+      "200": {
+        "$value": "#ebe0c4"
+      },
+      "100": {
+        "$value": "#f5eed9"
+      },
+      "50": {
+        "$value": "#faf7ef"
+      }
+    },
+    "base": {
+      "white": {
+        "$value": "#fff"
+      },
+      "paper": {
+        "$value": "#fafafa"
+      },
+      "graphite": {
+        "$value": "#333333"
+      }
+    },
+    "status": {
+      "success": {
+        "text": {
+          "$value": "#1c7040"
+        },
+        "bg": {
+          "$value": "#e9f2ec"
+        },
+        "border": {
+          "$value": "#cbe0d3"
+        }
+      },
+      "warning": {
+        "text": {
+          "$value": "#7d5a00"
+        },
+        "bg": {
+          "$value": "#fdf3dd"
+        },
+        "border": {
+          "$value": "#ecdcb4"
+        }
+      },
+      "danger": {
+        "text": {
+          "$value": "#a32b22"
+        },
+        "bg": {
+          "$value": "#fdeeec"
+        },
+        "border": {
+          "$value": "#f0d3cf"
+        }
+      },
+      "info": {
+        "text": {
+          "$value": "#17548a"
+        },
+        "bg": {
+          "$value": "#eaf1f8"
+        },
+        "border": {
+          "$value": "#cfdeec"
+        }
+      },
+      "neutral": {
+        "text": {
+          "$value": "#5e5e5e"
+        },
+        "bg": {
+          "$value": "#eff0f0"
+        },
+        "border": {
+          "$value": "#d1d3d4"
+        }
+      }
+    },
+    "semantic": {
+      "accent": {
+        "$value": "{color.gold.500}",
+        "$extensions": {
+          "cv": {
+            "css": "--acento"
+          }
+        }
+      },
+      "link": {
+        "$value": "{color.gold.700}",
+        "$extensions": {
+          "cv": {
+            "css": "--link"
+          }
+        }
+      },
+      "focus-bg": {
+        "$value": "{color.gold.100}",
+        "$description": "Hoje usado como fundo do foco; o anel de foco não existe (A11Y-01).",
+        "$extensions": {
+          "cv": {
+            "css": "--foco"
+          }
+        }
+      },
+      "focus-ring": {
+        "$value": "{color.gold.700}",
+        "$description": "PROPOSTA: anel de foco com contraste ≥ 3:1 contra papel e branco.",
+        "$extensions": {
+          "cv": {
+            "status": "proposed"
+          }
+        }
+      },
+      "text": {
+        "$value": "{color.neutral.700}",
+        "$extensions": {
+          "cv": {
+            "css": "body color"
+          }
+        }
+      },
+      "text-strong": {
+        "$value": "{color.neutral.900}"
+      },
+      "text-muted": {
+        "$value": "{color.neutral.600}",
+        "$description": "PROPOSTA: substitui n-400/n-450 em texto pequeno (contraste ≥ 4,5:1).",
+        "$extensions": {
+          "cv": {
+            "status": "proposed"
+          }
+        }
+      },
+      "label": {
+        "$value": "{color.neutral.450}",
+        "$description": "Atual: 4,33:1 sobre papel em 11px — abaixo do AA.",
+        "$extensions": {
+          "cv": {
+            "css": "--rotulo",
+            "status": "needs-fix"
+          }
+        }
+      },
+      "hover-bg": {
+        "$value": "{color.neutral.100}",
+        "$extensions": {
+          "cv": {
+            "css": "--hover-b"
+          }
+        }
+      },
+      "selected-bg": {
+        "$value": "{color.gold.50}",
+        "$extensions": {
+          "cv": {
+            "css": "--sel-b"
+          }
+        }
+      },
+      "selected-border": {
+        "$value": "{color.gold.400}",
+        "$extensions": {
+          "cv": {
+            "css": "--sel-r"
+          }
+        }
+      }
+    }
+  }
+}

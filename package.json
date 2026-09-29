@@ -31,7 +31,9 @@
     "posttest:a11y": "node tests/tools/summarize.mjs a11y",
     "posttest:perf": "node tests/tools/summarize.mjs perf",
     "posttest:responsive": "node tests/tools/summarize.mjs responsive",
-    "test:a11y:baseline": "playwright test --project=a11y; node tests/tools/summarize.mjs a11y --update-baseline"
+    "test:a11y:baseline": "playwright test --project=a11y; node tests/tools/summarize.mjs a11y --update-baseline",
+    "agent:db-audit": "node scripts/agent/run.mjs db-audit",
+    "agent:tokens": "node scripts/agent/run.mjs tokens"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",

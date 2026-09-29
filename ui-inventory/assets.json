@@ -1,7 +1,7 @@
 {
-  "count": 101,
+  "count": 102,
   "total_bytes_by_kind": {
-    "css": 568733,
+    "css": 572487,
     "fonts": 3172712,
     "icons": 237050,
     "img": 197960,
@@ -80,6 +80,12 @@
       "kind": "css",
       "vendor": false,
       "bytes": 3444
+    },
+    {
+      "file": "static/css/tokens.css",
+      "kind": "css",
+      "vendor": false,
+      "bytes": 3754
     },
     {
       "file": "static/css/viagens-cadastros.css",

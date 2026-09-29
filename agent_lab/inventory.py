@@ -31,6 +31,7 @@ APPS_PROJETO = None  # preenchido sob demanda
 # utilidades
 # ---------------------------------------------------------------------------
 
+
 def rel(p: Path | str) -> str:
     try:
         return str(Path(p).resolve().relative_to(BASE))
@@ -42,8 +43,9 @@ def apps_projeto():
     global APPS_PROJETO
     if APPS_PROJETO is None:
         APPS_PROJETO = sorted(
-            c.label for c in apps.get_app_configs() if Path(c.path).resolve().is_relative_to(BASE)
-            and ".venv" not in Path(c.path).parts
+            c.label
+            for c in apps.get_app_configs()
+            if Path(c.path).resolve().is_relative_to(BASE) and ".venv" not in Path(c.path).parts
         )
     return APPS_PROJETO
 
@@ -76,6 +78,7 @@ def templates_projeto():
 # rotas
 # ---------------------------------------------------------------------------
 
+
 def _walk(resolvers, prefix="", ns=None):
     for entry in resolvers:
         if isinstance(entry, URLResolver):
@@ -96,12 +99,12 @@ def _view_info(callback):
     try:
         arquivo = rel(inspect.getsourcefile(alvo))
         linha = inspect.getsourcelines(alvo)[1]
-    except (TypeError, OSError):
+    except TypeError, OSError:
         pass
     fonte = ""
     try:
         fonte = inspect.getsource(alvo)
-    except (TypeError, OSError):
+    except TypeError, OSError:
         pass
     # Decorators deixam rastro em __wrapped__/atributos; olhamos a fonte do wrapper também.
     decorators = set()
@@ -111,20 +114,28 @@ def _view_info(callback):
         if "login_required" in nomeq:
             decorators.add("login_required")
         cadeia = getattr(cadeia, "__wrapped__", None)
-    for l in fonte.splitlines():
-        if re.match(r"\s*(async\s+)?(def|class)\s", l):
+    for linha_src in fonte.splitlines():
+        if re.match(r"\s*(async\s+)?(def|class)\s", linha_src):
             break
-        m = re.match(r"\s*@([\w\.]+)", l)
+        m = re.match(r"\s*@([\w\.]+)", linha_src)
         if m:
             decorators.add(m.group(1).split(".")[-1])
     for mixin in getattr(view, "__mro__", ()):
         if mixin.__name__.endswith("Mixin"):
             decorators.add(mixin.__name__)
-    templates = sorted(set(re.findall(r"[\"']((?:pages|components|layouts|documentos|coffee_break|agent_lab)/[\w\-/\.]+\.html)[\"']", fonte)))
+    templates = sorted(
+        set(
+            re.findall(
+                r"[\"']((?:pages|components|layouts|documentos|coffee_break|agent_lab)/[\w\-/\.]+\.html)[\"']", fonte
+            )
+        )
+    )
     tn = getattr(view, "template_name", None)
     if isinstance(tn, str):
         templates = sorted(set(templates) | {tn})
-    metodos = sorted(set(re.findall(r"request\.method\s*==\s*[\"'](\w+)", fonte)) | set(re.findall(r"require_(GET|POST)", fonte)))
+    metodos = sorted(
+        set(re.findall(r"request\.method\s*==\s*[\"'](\w+)", fonte)) | set(re.findall(r"require_(GET|POST)", fonte))
+    )
     return {
         "view": f"{modulo}.{nome}",
         "file": arquivo,
@@ -148,16 +159,20 @@ def coletar_rotas():
         raiz_ns = (ns or "").split(":")[0]
         publico = raiz_ns in {"accounts"} and nome in {"login", "logout"}
         padrao_limpo = "/" + re.sub(r"\^|\$|\\Z", "", padrao)
-        rotas.append({
-            "name": full,
-            "pattern": padrao_limpo,
-            "namespace": ns,
-            "params": re.findall(r"<(?:\w+:)?(\w+)>", padrao),
-            "module_code": NAMESPACES_MODULOS.get(raiz_ns),
-            "public_hint": publico or raiz_ns in {"demandas_eventos_publico", "coffee_break_publico"} or padrao_limpo.startswith(("/pedido", "/fornecedor")),
-            "admin": padrao_limpo.startswith("/admin"),
-            **info,
-        })
+        rotas.append(
+            {
+                "name": full,
+                "pattern": padrao_limpo,
+                "namespace": ns,
+                "params": re.findall(r"<(?:\w+:)?(\w+)>", padrao),
+                "module_code": NAMESPACES_MODULOS.get(raiz_ns),
+                "public_hint": publico
+                or raiz_ns in {"demandas_eventos_publico", "coffee_break_publico"}
+                or padrao_limpo.startswith(("/pedido", "/fornecedor")),
+                "admin": padrao_limpo.startswith("/admin"),
+                **info,
+            }
+        )
     rotas.sort(key=lambda r: (r["pattern"], r["name"] or ""))
     return {"count": len(rotas), "routes": rotas}
 
@@ -255,31 +270,45 @@ def coletar_tabelas_modais(todos):
     for t in todos:
         txt = ler(BASE / t["file"])
         for m in re.finditer(r"<table\b[^>]*>(.*?)</table>", txt, re.S):
-            cab = [re.sub(r"<[^>]+>|{[{%].*?[}%]}", "", th).strip() for th in re.findall(r"<th\b[^>]*>(.*?)</th>", m.group(1), re.S)]
-            tabelas.append({
-                "template": t["template"],
-                "file": t["file"],
-                "headers": [h for h in cab if h],
-                "has_caption": "<caption" in m.group(1),
-                "th_scope": 'scope="' in m.group(1),
-                "responsive_wrapper_hint": bool(re.search(r"(table-wrap|tabela-wrap|overflow|rolagem)", txt[max(0, m.start() - 300): m.start()])),
-            })
-        for m in re.finditer(r"<dialog\b[^>]*>|<[^>]+role=\"dialog\"[^>]*>|<div[^>]+class=\"[^\"]*\bmodal\b[^\"]*\"[^>]*>", txt):
+            cab = [
+                re.sub(r"<[^>]+>|{[{%].*?[}%]}", "", th).strip()
+                for th in re.findall(r"<th\b[^>]*>(.*?)</th>", m.group(1), re.S)
+            ]
+            tabelas.append(
+                {
+                    "template": t["template"],
+                    "file": t["file"],
+                    "headers": [h for h in cab if h],
+                    "has_caption": "<caption" in m.group(1),
+                    "th_scope": 'scope="' in m.group(1),
+                    "responsive_wrapper_hint": bool(
+                        re.search(
+                            r"(table-wrap|tabela-wrap|overflow|rolagem)", txt[max(0, m.start() - 300) : m.start()]
+                        )
+                    ),
+                }
+            )
+        for m in re.finditer(
+            r"<dialog\b[^>]*>|<[^>]+role=\"dialog\"[^>]*>|<div[^>]+class=\"[^\"]*\bmodal\b[^\"]*\"[^>]*>", txt
+        ):
             tag = m.group(0)
-            modais.append({
-                "template": t["template"],
-                "file": t["file"],
-                "element": "dialog" if tag.startswith("<dialog") else "div",
-                "id": (re.search(r"id=\"([^\"]+)\"", tag) or [None, None])[1],
-                "aria_labelledby": "aria-labelledby" in tag,
-                "aria_modal": "aria-modal" in tag,
-            })
+            modais.append(
+                {
+                    "template": t["template"],
+                    "file": t["file"],
+                    "element": "dialog" if tag.startswith("<dialog") else "div",
+                    "id": (re.search(r"id=\"([^\"]+)\"", tag) or [None, None])[1],
+                    "aria_labelledby": "aria-labelledby" in tag,
+                    "aria_modal": "aria-modal" in tag,
+                }
+            )
     return {"count": len(tabelas), "tables": tabelas}, {"count": len(modais), "dialogs": modais}
 
 
 # ---------------------------------------------------------------------------
 # formulários
 # ---------------------------------------------------------------------------
+
 
 def coletar_forms():
     from django import forms as djforms
@@ -305,21 +334,27 @@ def coletar_forms():
                     continue
                 campos = []
                 for fnome, f in getattr(cls, "base_fields", {}).items():
-                    campos.append({
-                        "name": fnome,
-                        "type": type(f).__name__,
-                        "widget": type(f.widget).__name__,
-                        "required": f.required,
-                        "label": str(f.label) if f.label else None,
-                        "help_text": bool(f.help_text),
-                    })
-                saida.append({
-                    "form": f"{mod.__name__}.{nome}",
-                    "app": label,
-                    "kind": "formset" if issubclass(cls, djforms.BaseFormSet) else ("modelform" if issubclass(cls, djforms.BaseModelForm) else "form"),
-                    "model": getattr(getattr(cls, "_meta", None), "model", None) and cls._meta.model._meta.label,
-                    "fields": campos,
-                })
+                    campos.append(
+                        {
+                            "name": fnome,
+                            "type": type(f).__name__,
+                            "widget": type(f.widget).__name__,
+                            "required": f.required,
+                            "label": str(f.label) if f.label else None,
+                            "help_text": bool(f.help_text),
+                        }
+                    )
+                saida.append(
+                    {
+                        "form": f"{mod.__name__}.{nome}",
+                        "app": label,
+                        "kind": "formset"
+                        if issubclass(cls, djforms.BaseFormSet)
+                        else ("modelform" if issubclass(cls, djforms.BaseModelForm) else "form"),
+                        "model": getattr(getattr(cls, "_meta", None), "model", None) and cls._meta.model._meta.label,
+                        "fields": campos,
+                    }
+                )
     saida.sort(key=lambda f: f["form"])
     return {"count": len(saida), "forms": saida}
 
@@ -327,6 +362,7 @@ def coletar_forms():
 # ---------------------------------------------------------------------------
 # entidades
 # ---------------------------------------------------------------------------
+
 
 def coletar_entidades(com_contagem=True):
     ents = []
@@ -337,7 +373,10 @@ def coletar_entidades(com_contagem=True):
         for f in m._meta.get_fields():
             if f.auto_created and not f.concrete:
                 continue
-            item = {"name": f.name, "type": f.get_internal_type() if hasattr(f, "get_internal_type") else type(f).__name__}
+            item = {
+                "name": f.name,
+                "type": f.get_internal_type() if hasattr(f, "get_internal_type") else type(f).__name__,
+            }
             if getattr(f, "is_relation", False) and f.related_model:
                 item["to"] = f.related_model._meta.label
                 item["relation"] = "m2m" if f.many_to_many else ("o2o" if f.one_to_one else "fk")
@@ -357,7 +396,9 @@ def coletar_entidades(com_contagem=True):
             "model": m._meta.label,
             "db_table": m._meta.db_table,
             "verbose_name": str(m._meta.verbose_name),
-            "abstract_bases": [b.__name__ for b in m.__mro__[1:] if getattr(getattr(b, "_meta", None), "abstract", False)],
+            "abstract_bases": [
+                b.__name__ for b in m.__mro__[1:] if getattr(getattr(b, "_meta", None), "abstract", False)
+            ],
             "fields": campos,
             "constraints": [c.name for c in m._meta.constraints],
             "indexes": [i.name for i in m._meta.indexes],
@@ -378,6 +419,7 @@ def coletar_entidades(com_contagem=True):
 # permissões, navegação, integrações, documentos
 # ---------------------------------------------------------------------------
 
+
 def coletar_permissoes(rotas):
     from django.contrib.auth.models import Group
     from accounts.modulos import MODULOS_PORTAL, NAMESPACES_MODULOS
@@ -393,13 +435,29 @@ def coletar_permissoes(rotas):
         grupos_db = []
     try:
         from accounts.models import Modulo
+
         modulos_db = [{"codigo": m.codigo, "nome": m.nome, "ativo": m.ativo} for m in Modulo.objects.order_by("codigo")]
     except Exception:
         modulos_db = []
     sem_protecao = [
-        r["name"] or r["pattern"] for r in rotas["routes"]
-        if not r["admin"] and not r["module_code"] and not r["public_hint"]
-        and not ({"login_required", "LoginRequiredMixin", "modulo_requerido", "acesso_ao_modulo", "gerenciamento_de_cadastros", "permission_required", "user_passes_test", "staff_member_required"} & set(r["decorators"]))
+        r["name"] or r["pattern"]
+        for r in rotas["routes"]
+        if not r["admin"]
+        and not r["module_code"]
+        and not r["public_hint"]
+        and not (
+            {
+                "login_required",
+                "LoginRequiredMixin",
+                "modulo_requerido",
+                "acesso_ao_modulo",
+                "gerenciamento_de_cadastros",
+                "permission_required",
+                "user_passes_test",
+                "staff_member_required",
+            }
+            & set(r["decorators"])
+        )
     ]
     return {
         "namespaces_to_module": dict(sorted(NAMESPACES_MODULOS.items())),
@@ -432,7 +490,9 @@ RE_URL_EXTERNA = re.compile(r"https?://[\w\.\-]+(?:/[\w\-\./%{}]*)?")
 
 
 def coletar_integracoes():
-    env = sorted(set(re.findall(r"os\.environ(?:\.get)?\(?\[?\s*[\"']([A-Z0-9_]+)", ler(BASE / "config" / "settings.py"))))
+    env = sorted(
+        set(re.findall(r"os\.environ(?:\.get)?\(?\[?\s*[\"']([A-Z0-9_]+)", ler(BASE / "config" / "settings.py")))
+    )
     exemplo = BASE / ".env.example"
     env_exemplo = sorted(set(re.findall(r"^#?\s*([A-Z][A-Z0-9_]+)=", ler(exemplo), re.M))) if exemplo.exists() else []
     hosts = defaultdict(set)
@@ -443,20 +503,44 @@ def coletar_integracoes():
         txt = ler(p)
         for u in RE_URL_EXTERNA.findall(txt):
             host = re.sub(r"^https?://", "", u).split("/")[0]
-            if host not in {"localhost", "127.0.0.1", "www.w3.org", "schemas.openxmlformats.org", "purl.org", "schemas.microsoft.com"}:
+            if host not in {
+                "localhost",
+                "127.0.0.1",
+                "www.w3.org",
+                "schemas.openxmlformats.org",
+                "purl.org",
+                "schemas.microsoft.com",
+            }:
                 hosts[host].add(rel(p))
         for lib in ("requests", "urllib.request", "http.client", "httpx", "smtplib", "anthropic"):
             if re.search(rf"^\s*(import|from)\s+{re.escape(lib)}\b", txt, re.M):
                 clientes[lib].add(rel(p))
     conhecidas = [
-        {"name": "eProtocolo (PR)", "settings": "EPROTOCOLO", "default_mode": "mock", "code": ["core/leitura/eprotocolo.py", "viagens_oficios/protocolo_services.py"]},
+        {
+            "name": "eProtocolo (PR)",
+            "settings": "EPROTOCOLO",
+            "default_mode": "mock",
+            "code": ["core/leitura/eprotocolo.py", "viagens_oficios/protocolo_services.py"],
+        },
         {"name": "OpenRouteService", "settings": "OPENROUTESERVICE_API_KEY", "default_mode": "desligado sem chave"},
-        {"name": "OpenStreetMap/Nominatim (geocodificação)", "settings": "GEOCODIFICAR_SOB_DEMANDA", "default_mode": "ligado fora da suíte"},
+        {
+            "name": "OpenStreetMap/Nominatim (geocodificação)",
+            "settings": "GEOCODIFICAR_SOB_DEMANDA",
+            "default_mode": "ligado fora da suíte",
+        },
         {"name": "WhatsApp Cloud API", "settings": "WHATSAPP_*", "default_mode": "desligado"},
-        {"name": "Anthropic API (assistente)", "settings": "ANTHROPIC_API_KEY", "default_mode": "determinístico sem chave"},
+        {
+            "name": "Anthropic API (assistente)",
+            "settings": "ANTHROPIC_API_KEY",
+            "default_mode": "determinístico sem chave",
+        },
         {"name": "SMTP", "settings": "EMAIL_HOST", "default_mode": "console"},
         {"name": "Banco legado GV (somente leitura)", "settings": "LEGADO_DB_*", "default_mode": "desligado"},
-        {"name": "Word COM / LibreOffice / WeasyPrint (motores PDF)", "settings": "DOCUMENTOS_*", "default_mode": "auto"},
+        {
+            "name": "Word COM / LibreOffice / WeasyPrint (motores PDF)",
+            "settings": "DOCUMENTOS_*",
+            "default_mode": "auto",
+        },
     ]
     return {
         "known": conhecidas,
@@ -471,16 +555,20 @@ def coletar_documentos():
     saida = {"types": [], "resources": [], "golden": []}
     try:
         from documentos.services.registry import default_document_registry
+
         for d in default_document_registry.all():
-            saida["types"].append({
-                "tipo": getattr(d.tipo, "value", str(d.tipo)),
-                "label": d.label,
-                "formats": [getattr(f, "value", str(f)) for f in d.formatos_permitidos],
-            })
+            saida["types"].append(
+                {
+                    "tipo": getattr(d.tipo, "value", str(d.tipo)),
+                    "label": d.label,
+                    "formats": [getattr(f, "value", str(f)) for f in d.formatos_permitidos],
+                }
+            )
     except Exception as exc:
         saida["types_error"] = repr(exc)
     try:
         from django.conf import settings as s
+
         saida["pdf_html_native"] = list(getattr(s, "DOCUMENTOS_PDF_HTML_NATIVO", ()))
     except Exception:
         pass
@@ -533,13 +621,15 @@ def coletar_tokens():
     tokens = []
     for nome in sorted(defs):
         valores = {d["value"] for d in defs[nome]}
-        tokens.append({
-            "token": nome,
-            "definitions": defs[nome],
-            "conflicting_values": len(valores) > 1,
-            "usages": uso.get(nome, 0),
-            "category": _categoria_token(nome, defs[nome][0]["value"]),
-        })
+        tokens.append(
+            {
+                "token": nome,
+                "definitions": defs[nome],
+                "conflicting_values": len(valores) > 1,
+                "usages": uso.get(nome, 0),
+                "category": _categoria_token(nome, defs[nome][0]["value"]),
+            }
+        )
     usados_nao_definidos = sorted(t for t in sem_fallback if t not in defs and t not in dinamicas)
     return {
         "count": len(tokens),
@@ -585,22 +675,31 @@ def coletar_estilos():
         for sel, _ in regras:
             for s in sel.split(","):
                 s = s.strip()
-                if s and not s.startswith("@") and not s.startswith("from") and not s.startswith("to") and not s.endswith("%"):
+                if (
+                    s
+                    and not s.startswith("@")
+                    and not s.startswith("from")
+                    and not s.startswith("to")
+                    and not s.endswith("%")
+                ):
                     seletores[s].append(rel(p))
-        saida.append({
-            "file": rel(p),
-            "lines": txt.count("\n") + 1,
-            "bytes": p.stat().st_size,
-            "rules": len(regras),
-            "important": txt.count("!important"),
-            "media_queries": sorted(set(re.findall(r"@media\s*([^{]+)", txt)))[:40],
-            "hardcoded_colors": len(hexes) + len(RE_RGB.findall(corpo_sem_tokens)),
-            "px_font_sizes": len(re.findall(r"font-size\s*:\s*\d+px", txt)),
-            "outline_none": len(re.findall(r"outline\s*:\s*(none|0)\b", txt)),
-        })
+        saida.append(
+            {
+                "file": rel(p),
+                "lines": txt.count("\n") + 1,
+                "bytes": p.stat().st_size,
+                "rules": len(regras),
+                "important": txt.count("!important"),
+                "media_queries": sorted(set(re.findall(r"@media\s*([^{]+)", txt)))[:40],
+                "hardcoded_colors": len(hexes) + len(RE_RGB.findall(corpo_sem_tokens)),
+                "px_font_sizes": len(re.findall(r"font-size\s*:\s*\d+px", txt)),
+                "outline_none": len(re.findall(r"outline\s*:\s*(none|0)\b", txt)),
+            }
+        )
     breakpoints = Counter()
     for p in _css_files():
-        breakpoints.update(re.findall(r"(?:max|min)-width\s*:\s*(\d+)px", ler(p)))
+        for media in re.findall(r"@media[^{]+", ler(p)):
+            breakpoints.update(re.findall(r"(?:max|min)-width\s*:\s*(\d+)px", media))
     return {
         "files": saida,
         "breakpoints_px": dict(sorted(((k, v) for k, v in breakpoints.items()), key=lambda kv: int(kv[0]))),
@@ -636,8 +735,12 @@ def coletar_estados(todos):
             continue
         txt = ler(BASE / t["file"])
         saida.append({"template": t["template"], **{k: bool(re.search(v, txt, re.I)) for k, v in marcadores.items()}})
-    faltando = {k: sorted(s["template"] for s in saida if not s[k]) for k in ("empty", "error") }
-    return {"pages": saida, "pages_missing": faltando, "note": "Detecção textual (heurística). Confirme em runtime com os cenários de seed."}
+    faltando = {k: sorted(s["template"] for s in saida if not s[k]) for k in ("empty", "error")}
+    return {
+        "pages": saida,
+        "pages_missing": faltando,
+        "note": "Detecção textual (heurística). Confirme em runtime com os cenários de seed.",
+    }
 
 
 def coletar_duplicacao(todos, estilos, tokens):
@@ -668,12 +771,15 @@ def coletar_duplicacao(todos, estilos, tokens):
 # orquestração
 # ---------------------------------------------------------------------------
 
+
 def gerar(destino: Path, *, com_contagem=False) -> dict:
     destino.mkdir(parents=True, exist_ok=True)
     resultados = {}
 
     def salvar(nome, dados):
-        (destino / f"{nome}.json").write_text(json.dumps(dados, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
+        (destino / f"{nome}.json").write_text(
+            json.dumps(dados, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8"
+        )
         resultados[nome] = dados
 
     def seguro(fn, *a, **k):
@@ -689,8 +795,20 @@ def gerar(destino: Path, *, com_contagem=False) -> dict:
     salvar("components", seguro(coletar_componentes, componentes))
     tabelas, modais = coletar_tabelas_modais(todos)
     salvar("tables", tabelas)
-    salvar("modals", {"count": sum(1 for d in modais["dialogs"] if d["element"] == "div"), "dialogs": [d for d in modais["dialogs"] if d["element"] == "div"]})
-    salvar("dialogs", {"count": sum(1 for d in modais["dialogs"] if d["element"] == "dialog"), "dialogs": [d for d in modais["dialogs"] if d["element"] == "dialog"]})
+    salvar(
+        "modals",
+        {
+            "count": sum(1 for d in modais["dialogs"] if d["element"] == "div"),
+            "dialogs": [d for d in modais["dialogs"] if d["element"] == "div"],
+        },
+    )
+    salvar(
+        "dialogs",
+        {
+            "count": sum(1 for d in modais["dialogs"] if d["element"] == "dialog"),
+            "dialogs": [d for d in modais["dialogs"] if d["element"] == "dialog"],
+        },
+    )
     salvar("forms", seguro(coletar_forms))
     salvar("entities", seguro(coletar_entidades, com_contagem))
     salvar("navigation", seguro(coletar_navegacao))

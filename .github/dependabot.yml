@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: "/"
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    ignore:
+      # Playwright fica fixado na versão dos browsers do ambiente do agente.
+      - dependency-name: "@playwright/test"
+      - dependency-name: "playwright-core"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: { interval: weekly }

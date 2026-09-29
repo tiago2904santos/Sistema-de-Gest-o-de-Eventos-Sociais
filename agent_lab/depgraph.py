@@ -17,7 +17,7 @@ from pathlib import Path
 from django.apps import apps
 from django.conf import settings
 
-from .inventory import apps_projeto, arquivos, ler, rel, templates_projeto, RE_EXTENDS, RE_INCLUDE
+from .inventory import apps_projeto, arquivos, ler, templates_projeto, RE_EXTENDS, RE_INCLUDE
 
 BASE = Path(settings.BASE_DIR)
 
@@ -30,8 +30,8 @@ def _modulo_de(p: Path) -> str:
 
 
 def imports_entre_apps():
-    nomes = {apps.get_app_config(l).name: l for l in apps_projeto()}
-    raiz_para_app = {n.split(".")[0]: l for n, l in nomes.items()}
+    nomes = {apps.get_app_config(lb).name: lb for lb in apps_projeto()}
+    raiz_para_app = {n.split(".")[0]: lb for n, lb in nomes.items()}
     arestas = Counter()
     arestas_teste = Counter()
     modulos = defaultdict(set)
@@ -78,7 +78,7 @@ def relacoes_modelos():
 
 def ciclos(arestas):
     grafo = defaultdict(set)
-    for (a, b) in arestas:
+    for a, b in arestas:
         grafo[a].add(b)
     # Tarjan: componentes fortemente conexos com mais de um nó = ciclos de dependência.
     indice, low, pilha, na_pilha, comps = {}, {}, [], set(), []
@@ -138,27 +138,39 @@ def gerar(destino: Path) -> dict:
     fan_in = Counter(b for _, b in imp)
     metricas = {
         app: {
-            "fan_out": fan_out.get(app, 0), "fan_in": fan_in.get(app, 0),
+            "fan_out": fan_out.get(app, 0),
+            "fan_in": fan_in.get(app, 0),
             # Instabilidade de Martin: 0 = estável (muitos dependem dele), 1 = instável.
             "instability": round(fan_out.get(app, 0) / ((fan_out.get(app, 0) + fan_in.get(app, 0)) or 1), 2),
-        } for app in apps_projeto()
+        }
+        for app in apps_projeto()
     }
     dados = {
-        "app_imports": [{"from": a, "to": b, "count": n, "examples": sorted(mods[(a, b)])[:8]} for (a, b), n in sorted(imp.items())],
-        "app_imports_tests_only": [{"from": a, "to": b, "count": n} for (a, b), n in sorted(imp_teste.items()) if (a, b) not in imp],
+        "app_imports": [
+            {"from": a, "to": b, "count": n, "examples": sorted(mods[(a, b)])[:8]} for (a, b), n in sorted(imp.items())
+        ],
+        "app_imports_tests_only": [
+            {"from": a, "to": b, "count": n} for (a, b), n in sorted(imp_teste.items()) if (a, b) not in imp
+        ],
         "import_cycles": ciclos(imp),
-        "model_relations": [{"from": a, "to": b, "count": n, "fields": det_m[(a, b)]} for (a, b), n in sorted(rel_m.items())],
+        "model_relations": [
+            {"from": a, "to": b, "count": n, "fields": det_m[(a, b)]} for (a, b), n in sorted(rel_m.items())
+        ],
         "model_relation_cycles": ciclos(rel_m),
         "app_metrics": metricas,
         "template_edges": templates_grafo(),
     }
-    (destino / "dependency-graph.json").write_text(json.dumps(dados, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (destino / "dependency-graph.json").write_text(
+        json.dumps(dados, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     (destino / "app-imports.mmd").write_text(_mermaid(imp, "Imports entre apps (código de produção)"), encoding="utf-8")
     (destino / "model-relations.mmd").write_text(_mermaid(rel_m, "Relações entre modelos, por app"), encoding="utf-8")
     dot = ["digraph apps { rankdir=LR; node [shape=box, fontname=Helvetica];"]
     dot += [f'  "{a}" -> "{b}" [label="{n}"];' for (a, b), n in sorted(imp.items())]
     (destino / "app-imports.dot").write_text("\n".join(dot + ["}"]) + "\n", encoding="utf-8")
     return {
-        "app_import_edges": len(imp), "import_cycles": len(dados["import_cycles"]),
-        "model_relation_edges": len(rel_m), "template_edges": len(dados["template_edges"]),
+        "app_import_edges": len(imp),
+        "import_cycles": len(dados["import_cycles"]),
+        "model_relation_edges": len(rel_m),
+        "template_edges": len(dados["template_edges"]),
     }

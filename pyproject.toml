@@ -1,0 +1,21 @@
+# Configuração das ferramentas de qualidade (o projeto não é empacotado).
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+extend-exclude = [".venv", "node_modules", "staticfiles", "media", ".lab", "*/migrations/*", "docs/design-import"]
+
+[tool.ruff.lint]
+# Conjunto padrão (pyflakes + erros de sintaxe/estilo que escondem bugs).
+# Portão do CI: só a fatia "quebra em runtime" (E9, F63, F7, F82) — zero hoje.
+# O resto é relatório até a dívida ser paga (292 achados em 29/09/2026).
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"*/tests/*" = ["F841"]
+"settings_revisao.py" = ["F403"]
+
+[tool.ruff.format]
+# Formatação só em código novo/alterado (agent_lab/ e scripts/agent/). Reformatar
+# os ~780 arquivos existentes geraria um diff gigante sem ganho funcional.
+quote-style = "double"

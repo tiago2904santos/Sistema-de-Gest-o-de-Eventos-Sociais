@@ -1220,7 +1220,8 @@
       "static/css/design-system.css",
       "static/css/ds-v32-bridge.css",
       "static/css/ds-v32.css",
-      "static/css/pages/diario-campo.css"
+      "static/css/pages/diario-campo.css",
+      "static/css/tokens.css"
     ],
     "a": [
       "static/css/design-system.css",
@@ -1241,9 +1242,14 @@
   },
   "selectors_defined_in_multiple_css_files_total": 308,
   "color_tokens_with_same_value": {
+    "#17548a": [
+      "--in-t",
+      "--t-color-status-info-text"
+    ],
     "#1c7040": [
       "--dc-ok-t",
-      "--ok-t"
+      "--ok-t",
+      "--t-color-status-success-text"
     ],
     "#1f1f1f": [
       "--gc-cor-t",
@@ -1252,7 +1258,8 @@
     "#262626": [
       "--cor-grafite-900",
       "--dc-texto",
-      "--n-950"
+      "--n-950",
+      "--t-color-neutral-950"
     ],
     "#333333": [
       "--cor-grafite-800",
@@ -1260,7 +1267,13 @@
       "--cor-texto",
       "--dc-grafite",
       "--grafite",
-      "--n-900"
+      "--n-900",
+      "--t-color-base-graphite",
+      "--t-color-neutral-900"
+    ],
+    "#3f3f3f": [
+      "--n-800",
+      "--t-color-neutral-800"
     ],
     "#404040": [
       "--cor-grafite-700",
@@ -1268,29 +1281,55 @@
     ],
     "#4d4d4d": [
       "--cor-grafite-600",
-      "--n-700"
+      "--n-700",
+      "--t-color-neutral-700"
+    ],
+    "#5c4a1c": [
+      "--d-900",
+      "--t-color-gold-900"
     ],
     "#5e5e5e": [
       "--dc-suave",
       "--n-600",
-      "--nt-t"
+      "--nt-t",
+      "--t-color-neutral-600",
+      "--t-color-status-neutral-text"
     ],
     "#616161": [
       "--ag-prazo",
       "--ag-prazo-r"
     ],
+    "#6d5926": [
+      "--d-800",
+      "--t-color-gold-800"
+    ],
+    "#6e6e6e": [
+      "--n-500",
+      "--t-color-neutral-500"
+    ],
     "#7d5a00": [
       "--dc-wn-t",
+      "--t-color-status-warning-text",
       "--wn-t"
+    ],
+    "#7d6626": [
+      "--d-700",
+      "--t-color-gold-700"
     ],
     "#808080": [
       "--cor-cinza-500",
       "--cor-texto-suave",
-      "--n-400"
+      "--n-400",
+      "--t-color-neutral-400"
     ],
     "#a32b22": [
       "--dc-dg-t",
-      "--dg-t"
+      "--dg-t",
+      "--t-color-status-danger-text"
+    ],
+    "#a6a8aa": [
+      "--n-300",
+      "--t-color-neutral-300"
     ],
     "#bea45a": [
       "--cor-dourado-400",
@@ -1298,45 +1337,113 @@
       "--cor-dourado-700",
       "--d-500",
       "--d-600",
-      "--dc-dourado"
+      "--dc-dourado",
+      "--t-color-gold-500",
+      "--t-color-gold-600"
     ],
     "#c9b06d": [
       "--d-400",
-      "--d-550"
+      "--d-550",
+      "--t-color-gold-400",
+      "--t-color-gold-550"
+    ],
+    "#cbe0d3": [
+      "--ok-r",
+      "--t-color-status-success-border"
+    ],
+    "#cfdeec": [
+      "--in-r",
+      "--t-color-status-info-border"
     ],
     "#d1d3d4": [
       "--cor-borda",
       "--cor-cinza-300",
       "--dc-borda",
       "--n-250",
-      "--nt-r"
+      "--nt-r",
+      "--t-color-neutral-250",
+      "--t-color-status-neutral-border"
     ],
     "#d50000": [
       "--ag-prazo-vencido",
       "--ag-prazo-vencido-r"
     ],
+    "#ddd0ab": [
+      "--d-300",
+      "--t-color-gold-300"
+    ],
+    "#e1e2e3": [
+      "--n-200",
+      "--t-color-neutral-200"
+    ],
+    "#e9eaeb": [
+      "--n-150",
+      "--t-color-neutral-150"
+    ],
     "#e9f2ec": [
       "--dc-ok-b",
-      "--ok-b"
+      "--ok-b",
+      "--t-color-status-success-bg"
+    ],
+    "#eaf1f8": [
+      "--in-b",
+      "--t-color-status-info-bg"
+    ],
+    "#ebe0c4": [
+      "--d-200",
+      "--t-color-gold-200"
+    ],
+    "#ecdcb4": [
+      "--t-color-status-warning-border",
+      "--wn-r"
     ],
     "#eff0f0": [
       "--n-100",
-      "--nt-b"
+      "--nt-b",
+      "--t-color-neutral-100",
+      "--t-color-status-neutral-bg"
+    ],
+    "#f0d3cf": [
+      "--dg-r",
+      "--t-color-status-danger-border"
+    ],
+    "#f3f4f4": [
+      "--n-75",
+      "--t-color-neutral-75"
+    ],
+    "#f5eed9": [
+      "--d-100",
+      "--t-color-gold-100"
     ],
     "#f6bf26": [
       "--ag-prazo-proximo",
       "--ag-prazo-proximo-r"
     ],
+    "#f7f8f8": [
+      "--n-50",
+      "--t-color-neutral-50"
+    ],
+    "#faf7ef": [
+      "--d-50",
+      "--t-color-gold-50"
+    ],
     "#fafafa": [
       "--dc-papel",
-      "--papel"
+      "--papel",
+      "--t-color-base-paper"
+    ],
+    "#fbfbfb": [
+      "--n-25",
+      "--t-color-neutral-25"
     ],
     "#fdeeec": [
       "--dc-dg-b",
-      "--dg-b"
+      "--dg-b",
+      "--t-color-status-danger-bg"
     ],
     "#fdf3dd": [
       "--dc-wn-b",
+      "--t-color-status-warning-bg",
       "--wn-b"
     ],
     "#fff": [
@@ -1350,7 +1457,8 @@
       "--dc-branco",
       "--fc-neutral-bg-color",
       "--fc-page-bg-color",
-      "--gc-sup"
+      "--gc-sup",
+      "--t-color-base-white"
     ]
   },
   "tokens_with_conflicting_definitions": [

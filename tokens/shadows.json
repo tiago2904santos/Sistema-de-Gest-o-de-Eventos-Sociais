@@ -1,0 +1,41 @@
+{
+  "shadow": {
+    "$type": "shadow",
+    "$description": "PROPOSTA de elevação: hoje as sombras são literais em cada regra.",
+    "1": {
+      "$value": "0 1px 2px rgba(26,25,23,.06)",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "2": {
+      "$value": "0 8px 24px rgba(26,25,23,.10)",
+      "$description": "menus, popovers",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "3": {
+      "$value": "0 12px 32px rgba(26,25,23,.16)",
+      "$description": "dropdowns grandes, painéis flutuantes",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "4": {
+      "$value": "0 24px 60px -12px rgba(26,25,23,.35)",
+      "$description": "diálogos",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    }
+  }
+}

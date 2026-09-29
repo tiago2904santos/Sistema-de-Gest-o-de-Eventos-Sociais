@@ -1,0 +1,95 @@
+name: Laboratório do agente
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: agent-lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: Qualidade (lint crítico, formatação, tokens, tipos)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.14", cache: pip }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: pip install -r requirements-dev.txt
+      - name: Ruff — só erros que quebram em runtime (portão)
+        run: ruff check --select E9,F63,F7,F82 .
+      - name: Ruff — relatório completo (não bloqueia)
+        run: ruff check --exit-zero --statistics .
+      - name: Formatação do código novo
+        run: ruff format --check agent_lab scripts/agent
+      - name: Tokens compilados em dia
+        run: python scripts/agent/build_tokens.py --check
+      - run: npm ci
+      - name: TypeScript (strict) dos testes
+        run: npm run typecheck
+
+  lab-django:
+    name: Testes do agent_lab (SQLite)
+    runs-on: ubuntu-latest
+    env: { PYTHONUTF8: "1", AGENT_LAB: "1" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.14", cache: pip }
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: python manage.py test agent_lab --noinput -v 2
+
+  navegador:
+    name: Playwright (smoke, e2e, regressão, a11y, responsivo)
+    runs-on: ubuntu-latest
+    env: { PYTHONUTF8: "1", CI: "1" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.14", cache: pip }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/agent/run.mjs inventory
+      - name: Testes bloqueantes
+        run: npx playwright test --project=smoke --project=e2e --project=regression --project=a11y --project=responsive
+      - name: Visual (informativo até existir baseline gerado no runner)
+        if: always()
+        continue-on-error: true
+        run: npx playwright test --project=visual
+      - name: Resumos
+        if: always()
+        run: |
+          node tests/tools/summarize.mjs a11y || true
+          node tests/tools/summarize.mjs responsive || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: relatorios-laboratorio
+          path: reports/
+          retention-days: 14
+
+  seguranca:
+    name: Segurança (segredos e dependências)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Segredos no histórico (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.14", cache: pip }
+      - name: pip-audit (informativo)
+        continue-on-error: true
+        run: pip install pip-audit && pip-audit -r requirements.txt
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: npm audit (informativo)
+        continue-on-error: true
+        run: npm audit --audit-level=high

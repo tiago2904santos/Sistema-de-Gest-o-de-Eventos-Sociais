@@ -1,0 +1,57 @@
+{
+  "radius": {
+    "$type": "dimension",
+    "$description": "PROPOSTA: hoje há 12+ raios diferentes (5–12px, 99px, 999px, 50%).",
+    "sm": {
+      "$value": "6px",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "md": {
+      "$value": "8px",
+      "$description": "Mais usado hoje (63×)",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "lg": {
+      "$value": "10px",
+      "$description": "Painéis/tabelas",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "xl": {
+      "$value": "12px",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "pill": {
+      "$value": "999px",
+      "$description": "Unifica 99px/999px",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "round": {
+      "$value": "50%",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    }
+  }
+}

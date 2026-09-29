@@ -14,8 +14,23 @@ from agent_lab.seed import ANCORA, CENARIOS, Semeador
 from agent_lab.specimens import ESTADOS, all_specimens
 
 ARQUIVOS_INVENTARIO = [
-    "routes", "pages", "components", "forms", "tables", "modals", "dialogs", "navigation", "permissions",
-    "integrations", "entities", "documents", "tokens", "assets", "styles", "states", "duplication-report",
+    "routes",
+    "pages",
+    "components",
+    "forms",
+    "tables",
+    "modals",
+    "dialogs",
+    "navigation",
+    "permissions",
+    "integrations",
+    "entities",
+    "documents",
+    "tokens",
+    "assets",
+    "styles",
+    "states",
+    "duplication-report",
 ]
 
 
@@ -114,7 +129,9 @@ class LabViewsTests(TestCase):
 
 class AuditoriaTests(TestCase):
     def test_achados_seguem_o_esquema(self):
-        esquema = json.loads((Path(__file__).resolve().parents[1] / "docs/agent/audit-finding.schema.json").read_text(encoding="utf-8"))
+        esquema = json.loads(
+            (Path(__file__).resolve().parents[1] / "docs/agent/audit-finding.schema.json").read_text(encoding="utf-8")
+        )
         obrigatorios = set(esquema["required"])
         with tempfile.TemporaryDirectory() as d:
             resumo = audit_static.executar(Path(d))
@@ -145,5 +162,7 @@ class RelogioAncoradoTests(TestCase):
         try:
             clock.ancorar("2026-09-15T10:00:00-03:00")
             self.assertEqual(timezone.localdate().isoformat(), "2026-09-15")
+            self.assertIs(timezone.now, original, "precisa ser o mesmo objeto (migrações comparam identidade)")
         finally:
-            timezone.now = original
+            clock.desancorar()
+        self.assertNotEqual(timezone.localdate().isoformat(), "2026-09-15")

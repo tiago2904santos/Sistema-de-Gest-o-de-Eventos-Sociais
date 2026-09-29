@@ -23,4 +23,5 @@ class AgentLabConfig(AppConfig):
         congelar = os.environ.get("AGENT_LAB_FREEZE")
         if congelar:
             from .clock import ancorar
+
             ancorar(congelar)

@@ -14,7 +14,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--out", default=str(Path(settings.BASE_DIR) / "ui-inventory"))
-        parser.add_argument("--com-contagem", action="store_true", help="Inclui a contagem de linhas de cada tabela (depende do banco; não versionar).")
+        parser.add_argument(
+            "--com-contagem",
+            action="store_true",
+            help="Inclui a contagem de linhas de cada tabela (depende do banco; não versionar).",
+        )
 
     def handle(self, *args, **opts):
         resumo = gerar(Path(opts["out"]), com_contagem=opts["com_contagem"])

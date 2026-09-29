@@ -1,0 +1,46 @@
+{
+  "breakpoint": {
+    "$type": "dimension",
+    "$description": "PROPOSTA: hoje há 18 breakpoints distintos em @media (560–1400px).",
+    "sm": {
+      "$value": "640px",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "md": {
+      "$value": "768px",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "lg": {
+      "$value": "1024px",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "xl": {
+      "$value": "1280px",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    },
+    "2xl": {
+      "$value": "1440px",
+      "$extensions": {
+        "cv": {
+          "status": "proposed"
+        }
+      }
+    }
+  }
+}

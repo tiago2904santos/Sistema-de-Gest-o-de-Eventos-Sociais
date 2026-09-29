@@ -1,0 +1,31 @@
+{
+  "motion": {
+    "duration": {
+      "$type": "duration",
+      "fast": {
+        "$value": "130ms",
+        "$extensions": {
+          "cv": {
+            "css": "--motion"
+          }
+        }
+      }
+    },
+    "easing": {
+      "$type": "cubicBezier",
+      "standard": {
+        "$value": [
+          0.2,
+          0,
+          0.2,
+          1
+        ],
+        "$extensions": {
+          "cv": {
+            "css": "--motion"
+          }
+        }
+      }
+    }
+  }
+}

@@ -61,10 +61,14 @@ def specimen(request, spec_id):
 
 def specimens_json(request):
     _liberado(request)
-    return JsonResponse({"specimens": [
-        {"id": s.id, "component": s.component, "state": s.state, "interact": s.interact, "note": s.note}
-        for s in all_specimens()
-    ]})
+    return JsonResponse(
+        {
+            "specimens": [
+                {"id": s.id, "component": s.component, "state": s.state, "interact": s.interact, "note": s.note}
+                for s in all_specimens()
+            ]
+        }
+    )
 
 
 def health(request):
@@ -90,6 +94,7 @@ def health(request):
         dados["db_error"] = f"{type(exc).__name__}: {exc}"
     try:
         from .seed import estado_atual
+
         dados["seed"] = estado_atual()
     except Exception as exc:
         dados["seed"] = {"error": repr(exc)}
@@ -107,6 +112,7 @@ def error_preview(request, code):
         return defaults.page_not_found(request, Http404("prévia do laboratório"))
     if code == 403:
         from django.core.exceptions import PermissionDenied
+
         return defaults.permission_denied(request, PermissionDenied("prévia do laboratório"))
     if code == 500:
         return defaults.server_error(request)

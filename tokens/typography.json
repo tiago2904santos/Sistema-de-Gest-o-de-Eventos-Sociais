@@ -1,0 +1,116 @@
+{
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "sans": {
+        "$value": [
+          "Segoe UI",
+          "system-ui",
+          "-apple-system",
+          "Helvetica Neue",
+          "sans-serif"
+        ],
+        "$extensions": {
+          "cv": {
+            "css": "--f"
+          }
+        }
+      }
+    },
+    "size": {
+      "$type": "dimension",
+      "$description": "PROPOSTA de escala: hoje o CSS usa 115 valores distintos de font-size.",
+      "xs": {
+        "$value": "11px",
+        "$extensions": {
+          "cv": {
+            "status": "proposed"
+          }
+        }
+      },
+      "sm": {
+        "$value": "12px",
+        "$extensions": {
+          "cv": {
+            "status": "proposed"
+          }
+        }
+      },
+      "md": {
+        "$value": "13px",
+        "$extensions": {
+          "cv": {
+            "status": "proposed"
+          }
+        }
+      },
+      "base": {
+        "$value": "14px",
+        "$description": "Corpo atual",
+        "$extensions": {
+          "cv": {
+            "status": "proposed"
+          }
+        }
+      },
+      "lg": {
+        "$value": "16px",
+        "$extensions": {
+          "cv": {
+            "status": "proposed"
+          }
+        }
+      },
+      "xl": {
+        "$value": "20px",
+        "$extensions": {
+          "cv": {
+            "status": "proposed"
+          }
+        }
+      },
+      "2xl": {
+        "$value": "26px",
+        "$extensions": {
+          "cv": {
+            "status": "proposed"
+          }
+        }
+      },
+      "3xl": {
+        "$value": "34px",
+        "$extensions": {
+          "cv": {
+            "status": "proposed"
+          }
+        }
+      }
+    },
+    "weight": {
+      "$type": "fontWeight",
+      "regular": {
+        "$value": 400
+      },
+      "medium": {
+        "$value": 500
+      },
+      "semibold": {
+        "$value": 600
+      },
+      "bold": {
+        "$value": 700
+      }
+    },
+    "line-height": {
+      "$type": "number",
+      "tight": {
+        "$value": 1.08,
+        "$description": "h1 atual"
+      },
+      "base": {
+        "$value": 1.5,
+        "$description": "corpo atual"
+      }
+    }
+  }
+}

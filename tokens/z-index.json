@@ -1,0 +1,27 @@
+{
+  "z": {
+    "$type": "number",
+    "$description": "PROPOSTA: hoje z-index vai de 1 a 110 sem escala.",
+    "base": {
+      "$value": 1
+    },
+    "sticky": {
+      "$value": 20
+    },
+    "header": {
+      "$value": 40
+    },
+    "dropdown": {
+      "$value": 60
+    },
+    "overlay": {
+      "$value": 90
+    },
+    "dialog": {
+      "$value": 100
+    },
+    "toast": {
+      "$value": 110
+    }
+  }
+}
