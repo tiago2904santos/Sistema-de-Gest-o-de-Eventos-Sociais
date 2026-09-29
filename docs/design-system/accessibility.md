@@ -1,6 +1,6 @@
 # Acessibilidade
 
-Meta: **WCAG 2.2 AA**. Medição automática: `npm run test:a11y` (axe em 20 páginas) + axe por componente no UI Lab.
+Meta: **WCAG 2.2 AA**. Medição automática: `npm run test:a11y` (axe em 21 páginas) + axe por componente no UI Lab.
 
 **Hoje**: 5 críticas (agenda, `aria-allowed-attr`), 177 sérias (contraste em quase todas as páginas; `target-size` no
 formulário de solicitação), 26 moderadas (`landmark-unique`). Foco invisível no casco (A11Y-01).

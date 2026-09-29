@@ -1,0 +1,15 @@
+{
+  "before": "reports/audit/viagens-prestacoes/desktop.png",
+  "after": "reports/audit/viagens-prestacoes/tablet.png",
+  "width": [
+    1593,
+    1593
+  ],
+  "height": [
+    5913,
+    13533
+  ],
+  "diffPixels": 711874,
+  "diffRatio": 0.03302,
+  "sizeChanged": true
+}

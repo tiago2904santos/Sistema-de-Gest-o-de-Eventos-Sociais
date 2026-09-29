@@ -1,0 +1,160 @@
+{
+  "summary": {
+    "page": "/viagens/prestacoes/",
+    "role": "viagensGestor",
+    "status": 200,
+    "generated_at": "2026-09-29T16:58:08.741Z",
+    "total": 7,
+    "by_severity": {
+      "P2": 4,
+      "P3": 3
+    }
+  },
+  "findings": [
+    {
+      "id": "rt-de209a42e844",
+      "rule": "axe:color-contrast",
+      "source": "runtime",
+      "category": "ACCESSIBILITY",
+      "severity": "P2",
+      "title": "Elements must meet minimum color contrast ratio thresholds (52×)",
+      "detail": ".ident-user__av | form[data-autosave-id=\"49\"] > .pc-linha__periodo > .form-campo > .form-controle-wrapper--date.custom-date.custom-date--range > .custom-date__trigger[aria-haspopup=\"dialog\"][data-custom-date-range-trigger=\"\"] > .custom-date__valor | form[data-autosave-id=\"46\"] > .pc-linha__periodo > .form-campo > .form-controle-wrapper--date.custom-date.custom-date--range > .custom-date__trigger[aria-haspopup=\"dialog\"][data-custom-date-range-trigger=\"\"] > .custom-date__valor",
+      "target": {
+        "type": "page",
+        "ref": "/viagens/prestacoes/",
+        "role": "viagensGestor"
+      },
+      "evidence": [
+        {
+          "kind": "file",
+          "path": "reports/audit/viagens-prestacoes/axe.json"
+        },
+        {
+          "kind": "url",
+          "value": "https://dequeuniversity.com/rules/axe/4.10/color-contrast?application=playwright"
+        }
+      ],
+      "recommendation": "Fix any of the following:   Element has insufficient color contrast of 2.42 (foreground color: #ffffff, background color: #bea45a, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1"
+    },
+    {
+      "id": "rt-927934995ba4",
+      "rule": "overflow-x",
+      "source": "runtime",
+      "category": "RESPONSIVE",
+      "severity": "P2",
+      "title": "Rolagem horizontal da página em desktop",
+      "detail": "scrollWidth 1593px > viewport 1440px; culpados: div.nav-mod, a",
+      "target": {
+        "type": "page",
+        "ref": "/viagens/prestacoes/",
+        "role": "viagensGestor"
+      },
+      "evidence": [
+        {
+          "kind": "screenshot",
+          "path": "reports/audit/viagens-prestacoes/desktop.png"
+        }
+      ],
+      "recommendation": ""
+    },
+    {
+      "id": "rt-0270d4c1ff5f",
+      "rule": "overflow-x",
+      "source": "runtime",
+      "category": "RESPONSIVE",
+      "severity": "P2",
+      "title": "Rolagem horizontal da página em tablet",
+      "detail": "scrollWidth 1593px > viewport 768px; culpados: div.nav-mod, a, div.nav-mod__grupo",
+      "target": {
+        "type": "page",
+        "ref": "/viagens/prestacoes/",
+        "role": "viagensGestor"
+      },
+      "evidence": [
+        {
+          "kind": "screenshot",
+          "path": "reports/audit/viagens-prestacoes/tablet.png"
+        }
+      ],
+      "recommendation": ""
+    },
+    {
+      "id": "rt-f39cffe15406",
+      "rule": "overflow-x",
+      "source": "runtime",
+      "category": "RESPONSIVE",
+      "severity": "P2",
+      "title": "Rolagem horizontal da página em mobile",
+      "detail": "scrollWidth 710px > viewport 390px; culpados: div.d-acoes, button.btn-primaria",
+      "target": {
+        "type": "page",
+        "ref": "/viagens/prestacoes/",
+        "role": "viagensGestor"
+      },
+      "evidence": [
+        {
+          "kind": "screenshot",
+          "path": "reports/audit/viagens-prestacoes/mobile.png"
+        }
+      ],
+      "recommendation": ""
+    },
+    {
+      "id": "rt-235d5db4911f",
+      "rule": "html-pesado",
+      "source": "runtime",
+      "category": "PERFORMANCE",
+      "severity": "P3",
+      "title": "HTML de 656 KB",
+      "detail": "",
+      "target": {
+        "type": "page",
+        "ref": "/viagens/prestacoes/",
+        "role": "viagensGestor"
+      },
+      "evidence": [],
+      "recommendation": "Pagine no servidor, remova menus/modais repetidos por linha, carregue detalhes sob demanda."
+    },
+    {
+      "id": "rt-30817e6114cf",
+      "rule": "dom-grande",
+      "source": "runtime",
+      "category": "PERFORMANCE",
+      "severity": "P3",
+      "title": "7394 nós no DOM",
+      "detail": "",
+      "target": {
+        "type": "page",
+        "ref": "/viagens/prestacoes/",
+        "role": "viagensGestor"
+      },
+      "evidence": [],
+      "recommendation": "Virtualize/pagine listas e evite menus duplicados por linha."
+    },
+    {
+      "id": "rt-9e438f4f4f70",
+      "rule": "axe:landmark-unique",
+      "source": "runtime",
+      "category": "ACCESSIBILITY",
+      "severity": "P3",
+      "title": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination (24×)",
+      "detail": "form[data-autosave-id=\"49\"] | form[data-autosave-id=\"46\"] | form[data-autosave-id=\"47\"]",
+      "target": {
+        "type": "page",
+        "ref": "/viagens/prestacoes/",
+        "role": "viagensGestor"
+      },
+      "evidence": [
+        {
+          "kind": "file",
+          "path": "reports/audit/viagens-prestacoes/axe.json"
+        },
+        {
+          "kind": "url",
+          "value": "https://dequeuniversity.com/rules/axe/4.10/landmark-unique?application=playwright"
+        }
+      ],
+      "recommendation": "Fix any of the following:   The landmark must have a unique aria-label, aria-labelledby, or title to make landmarks distinguishable"
+    }
+  ]
+}

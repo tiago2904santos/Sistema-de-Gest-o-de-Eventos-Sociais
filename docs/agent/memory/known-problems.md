@@ -19,3 +19,4 @@ Relatórios completos: `reports/audit/static-findings.md` (estático) e `docs/au
 | KP-10 | P3 | ARCHITECTURE | Ciclo de imports envolvendo 19 apps; `core` depende de apps de domínio | `reports/architecture/dependency-graph.json` |
 | KP-11 | P3 | MAINTAINABILITY | 127 páginas sem estado de erro detectável e 130 sem estado vazio (heurística) | `ui-inventory/states.json` |
 | KP-12 | P3 | UX | Linha de lista não clicável (UX-01 da auditoria manual) | `docs/auditoria-pratica-2026-09-29.md` |
+| KP-14 | P3 | VISUAL | Botão com rótulo longo não quebra nem trunca: vaza do contêiner (`components/v32/button.html`) | UI Lab `/_lab/c/button-long/` |
